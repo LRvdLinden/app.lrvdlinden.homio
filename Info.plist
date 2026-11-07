@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSHomeKitUsageDescription</key>
+	<string>Homio bedient je lampen, thermostaat, sloten, camera's en scènes uit Apple Woning.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Met nabijheid kijkt Homio of er iemand voor het scherm staat, om dan meer te tonen. Er wordt niets bewaard of verstuurd.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Homio toont je afspraken van vandaag en de komende dagen.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Homio gebruikt je locatie om het weer bij jou in de buurt te tonen.</string>
+	<key>UILaunchScreen</key>
+	<dict>
+		<key>UIColorName</key>
+		<string>LaunchBackground</string>
+	</dict>
+</dict>
+</plist>
