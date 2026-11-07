@@ -36,7 +36,7 @@ struct HomeTab: View {
                         }
                         zoneContent
                     }
-                    .padding(.horizontal, compact ? 16 : 28)
+                    .padding(.horizontal, compact ? Theme.edge : Theme.edgeTablet)
                     .padding(.vertical, 12)
                 }
                 .scrollIndicators(.hidden)
@@ -220,7 +220,7 @@ struct HomeTab: View {
     // MARK: Inhoud per zone
 
     private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: compact ? 104 : 150), spacing: compact ? 10 : 12)]
+        [GridItem(.adaptive(minimum: compact ? 96 : 124, maximum: 160), spacing: Theme.gutter)]
     }
 
     @ViewBuilder
@@ -241,7 +241,7 @@ struct HomeTab: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .card()
             } else {
-                LazyVGrid(columns: columns, spacing: 12) {
+                LazyVGrid(columns: columns, spacing: Theme.gutter) {
                     ForEach(favorites) { DeviceTile(device: $0) }
                 }
             }
@@ -367,7 +367,7 @@ private struct RoomSection: View {
                     .tint(IconPalette.yellow)
                 }
             }
-            LazyVGrid(columns: columns, spacing: 12) {
+            LazyVGrid(columns: columns, spacing: Theme.gutter) {
                 ForEach(room.devices) { DeviceTile(device: $0) }
             }
         }

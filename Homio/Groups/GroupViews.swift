@@ -1,71 +1,77 @@
 import SwiftUI
 
-/// Tegel voor een groep. Tik = alles aan/uit, lang drukken = details.
+/// Tegel voor een groep, in dezelfde vorm als een apparaattegel.
+/// Tik = alles aan/uit, lang drukken = details.
 struct GroupTile: View {
     let group: DeviceGroup
-    var minHeight: CGFloat = 118
+    var minHeight: CGFloat = 0
     var fillsHeight = false
 
     @EnvironmentObject private var home: HomeStore
     @State private var showDetail = false
     @State private var pressing = false
+    @State private var tapped = 0
 
     var body: some View {
         let state = GroupState(group: group, home: home)
         let on = state.isOn
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top) {
-                Image(systemName: group.symbol)
-                    .font(.system(size: 24, weight: .medium))
-                    .foregroundStyle(on ? Theme.orange : Theme.textLight)
-                    .frame(height: 30)
-                Spacer(minLength: 0)
-                Text("\(state.members.count)")
-                    .font(.caption.weight(.bold))
-                    .foregroundStyle(on ? Theme.tileOnTextLight : Theme.textLight)
-                    .padding(.horizontal, 7)
-                    .padding(.vertical, 2)
-                    .background(Capsule().fill(on ? Color.black.opacity(0.06) : Theme.pill))
+        GeometryReader { geo in
+            let side = fillsHeight ? min(geo.size.width, geo.size.height) : geo.size.width
+            let unit = max(0.8, min(1.4, side / 108))
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(alignment: .top) {
+                    Image(systemName: group.symbol)
+                        .font(.system(size: 26 * unit, weight: .regular))
+                        .foregroundStyle(on ? Theme.yellow : Theme.textLight)
+                        .frame(width: 36 * unit, height: 36 * unit, alignment: .topLeading)
+                    Spacer(minLength: 0)
+                    Text(verbatim: "\(state.members.count)")
+                        .font(.system(size: (12 * unit).rounded(), weight: .bold))
+                        .foregroundStyle(Theme.textMedium)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 1)
+                        .background(Capsule().fill(Theme.pill))
+                }
+                Spacer(minLength: 4)
+                Text(group.name)
+                    .font(.system(size: (14 * unit).rounded(), weight: .medium))
+                    .foregroundStyle(on ? Theme.text : Theme.textMedium)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.85)
             }
-            Spacer(minLength: Theme.su * 3)
-            Text(group.name)
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(on ? Theme.tileOnText : Theme.text)
-                .lineLimit(2)
-            HStack(spacing: 6) {
-                Text(state.stateText)
-                    .font(.system(size: 13))
-                    .foregroundStyle(on ? Theme.tileOnTextLight : Theme.textLight)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
-                Image(systemName: "power")
-                    .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(on ? Color.white : Theme.textLight)
-                    .frame(width: 24, height: 24)
-                    .background(Circle().fill(on ? Theme.orange : Theme.pill))
-            }
-            .padding(.top, 2)
+            .padding(Theme.tilePadding * min(unit, 1.2))
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
-        .padding(Theme.su * 3)
-        .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
+        .aspectRatio(fillsHeight ? nil : 1, contentMode: .fit)
+        .frame(minHeight: minHeight > 0 ? minHeight : nil)
         .background {
             RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
                 .fill(on ? Theme.tileOn : Theme.tileOff)
-                .shadow(color: .black.opacity(on ? 0.12 : 0), radius: 10, y: 4)
+                .overlay {
+                    if !on {
+                        RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                            .strokeBorder(Theme.tileBorder, lineWidth: 1 / UIScreen.main.scale)
+                    }
+                }
+                .shadow(color: .black.opacity(on ? 0.12 : 0), radius: 3, y: 2)
         }
-        .scaleEffect(pressing ? 0.95 : 1)
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pressing)
-        .animation(.easeInOut(duration: 0.25), value: on)
+        .scaleEffect(pressing ? 0.96 : 1)
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressing)
+        .animation(.easeInOut(duration: 0.2), value: on)
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
-        .onTapGesture { state.toggle(home) }
+        .onTapGesture {
+            state.toggle(home)
+            tapped += 1
+        }
         .onLongPressGesture(minimumDuration: 0.4, perform: {
             showDetail = true
         }, onPressingChanged: { pressing = $0 })
-        .sensoryFeedback(.impact(weight: .light), trigger: on)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: tapped)
         .sheet(isPresented: $showDetail) {
             GroupDetailSheet(groupID: group.id)
         }
-        .accessibilityElement(children: .combine)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(group.name), \(state.stateText)")
         .accessibilityAddTraits(.isButton)
     }
 }
@@ -142,8 +148,8 @@ struct GroupDetailSheet: View {
                     .card()
                 }
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
-                    ForEach(state.members) { DeviceTile(device: $0, minHeight: 120) }
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96, maximum: 160), spacing: Theme.gutter)], spacing: Theme.gutter) {
+                    ForEach(state.members) { DeviceTile(device: $0) }
                 }
             }
             .padding(20)
@@ -275,7 +281,7 @@ struct GroupsSection: View {
                     .font(.subheadline)
                     .foregroundStyle(Theme.textLight)
             } else {
-                LazyVGrid(columns: columns, spacing: 12) {
+                LazyVGrid(columns: columns, spacing: Theme.gutter) {
                     ForEach(groups.groups) { GroupTile(group: $0) }
                 }
             }

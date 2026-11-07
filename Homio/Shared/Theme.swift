@@ -3,21 +3,24 @@ import SwiftUI
 /// Homey-achtige huisstijl voor Homio: 4-punts raster, Homey-lettermaten
 /// (32/24/20/17/14), Homey-kleuren voor blauw/groen/oranje/rood, licht en donker.
 enum Theme {
-    // Homey-grijswaarden (mono): licht en donker. Pagina = mono-025, kaart/widget = mono-000 (licht)
-    // of mono-050 (donker), knoppen/pillen = mono-100, lijnen = mono-100.
-    static let background = Color(light: 0xF4F4FA, dark: 0x111218)
-    static let card = Color(light: 0xFFFFFF, dark: 0x1F2029)
-    static let cardRaised = Color(light: 0xEAEAF1, dark: 0x2B2C36)
+    // Homey-grijswaarden (colorPalette mono_*), licht en donker, zoals in de Homey-app.
+    // Semantisch: body = mono_025, component = mono_000/mono_050,
+    // component_on = mono_000/mono_200, component_off = mono_EX030/mono_050.
+    static let background = Color(light: 0xF4F4FA, dark: 0x111218)       // body
+    static let card = Color(light: 0xFFFFFF, dark: 0x1F2029)             // component
+    static let cardRaised = Color(light: 0xEAEAF1, dark: 0x2B2C36)       // component_highlight
     static let pill = Color(light: 0xEAEAF1, dark: 0x2B2C36)
-    /// Apparaattegel uit: grijzig vlak (Homey mono-050). Aan: licht vlak dat oplicht.
-    static let tileOff = Color(light: 0xEAEAF1, dark: 0x1F2029)
-    static let tileOn = Color(light: 0xFFFFFF, dark: 0xE4E4E7)
-    static let tileOnText = Color(light: 0x1C1C1C, dark: 0x1C1C1C)
-    static let tileOnTextLight = Color(light: 0x7A7A7F, dark: 0x5C5C66)
-    static let line = Color(light: 0xDADAE2, dark: 0x2B2C36)
-    static let lineLight = Color(light: 0xEAEAF1, dark: 0x1F2029)
-    static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)          // mono-900
-    static let textLight = Color(light: 0x7A7A7F, dark: 0x80818E)     // mono-500
+    /// Apparaattegel uit (component_off) en aan (component_on).
+    static let tileOff = Color(light: 0xF1F1F8, dark: 0x1F2029)
+    static let tileOn = Color(light: 0xFFFFFF, dark: 0x3B3D4A)
+    /// Haarlijn rond een tegel die uit staat (licht: zwart 5%, donker: mono_100).
+    static let tileBorder = Color(lightRGBA: (0, 0, 0, 0.05), dark: 0x2B2C36)
+    static let line = Color(light: 0xDADAE2, dark: 0x3B3D4A)              // mono_100 / mono_200
+    static let lineLight = Color(light: 0xEAEAF1, dark: 0x2B2C36)         // mono_050 / mono_100
+    static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)              // mono_900
+    static let textLight = Color(light: 0x93939A, dark: 0x999AA3)         // mono_400 / mono_600
+    static let textMedium = Color(light: 0x626265, dark: 0x999AA3)        // mono_600
+    static let iconLight = Color(light: 0xC8C8D0, dark: 0x999AA3)         // mono_200 / mono_600
 
     // Homey-kleuren (gelijk in licht en donker)
     static let accent = Color(red: 0x00 / 255, green: 0x82 / 255, blue: 0xFA / 255)   // blue  #0082FA
@@ -32,22 +35,42 @@ enum Theme {
     static let warmGradient = LinearGradient(colors: [amber, ember],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)
 
-    // Raster en vormen: --homey-su = 4 px, --homey-border-radius-default = 12, -small = 6
+    // Zone-bediening (zoneControls): lampen geel, klimaat oranje, speakers paars.
+    static let yellow = Color(red: 0xF5 / 255, green: 0xB2 / 255, blue: 0x07 / 255)   // #F5B207
+    static let purple = Color(red: 0x90 / 255, green: 0x33 / 255, blue: 0xFC / 255)   // #9033FC
+    /// Homey-verlopen (30°): blauw en moods.
+    static let blueGradient = LinearGradient(colors: [Color(red: 0, green: 0x6A / 255, blue: 1), Color(red: 0, green: 0xBF / 255, blue: 1)],
+                                             startPoint: .bottomLeading, endPoint: .topTrailing)
+    static let moodGradient = LinearGradient(colors: [Color(red: 0x8B / 255, green: 0x55 / 255, blue: 0xEA / 255),
+                                                      Color(red: 0xB6 / 255, green: 0x20 / 255, blue: 0xE0 / 255),
+                                                      Color(red: 0xF7 / 255, green: 0xB5 / 255, blue: 0)],
+                                             startPoint: .bottomLeading, endPoint: .topTrailing)
+
+    // Raster en vormen zoals in de Homey-app: su = 8, rand 16 (tablet 32), goot 16,
+    // tegel-padding 12, radius 10 (klein 5, groot 20).
     static let su: CGFloat = 4
-    static let corner: CGFloat = 12
-    static let cornerSmall: CGFloat = 6
-    static let tileCorner: CGFloat = 12
+    static let edge: CGFloat = 16
+    static let edgeTablet: CGFloat = 32
+    static let gutter: CGFloat = 16
+    static let tilePadding: CGFloat = 12
+    static let corner: CGFloat = 10
+    static let cornerSmall: CGFloat = 5
+    static let cornerLarge: CGFloat = 20
+    static let tileCorner: CGFloat = 10
 }
 
 /// Homey-lettermaten.
 enum HomeyFont {
-    static let xxlarge = Font.system(size: 32, weight: .bold, design: .rounded)
+    static let xxlarge = Font.system(size: 32, weight: .bold)
     static let xlarge = Font.system(size: 24, weight: .bold)
     static let large = Font.system(size: 20, weight: .medium)
     static let body = Font.system(size: 17)
     static let bodyMedium = Font.system(size: 17, weight: .medium)
     static let bodyBold = Font.system(size: 17, weight: .bold)
     static let small = Font.system(size: 14)
+    static let smallMedium = Font.system(size: 14, weight: .medium)
+    static let tiny = Font.system(size: 12)
+    static let extraTiny = Font.system(size: 11)
 }
 
 /// Weergave: automatisch, licht of donker.
@@ -73,6 +96,14 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
 }
 
 extension Color {
+    /// Lichte variant met transparantie, donkere variant als hex.
+    init(lightRGBA: (Double, Double, Double, Double), dark: UInt32) {
+        let d = (CGFloat((dark >> 16) & 0xFF) / 255, CGFloat((dark >> 8) & 0xFF) / 255, CGFloat(dark & 0xFF) / 255)
+        self.init(UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(red: d.0, green: d.1, blue: d.2, alpha: 1)
+            : UIColor(red: lightRGBA.0, green: lightRGBA.1, blue: lightRGBA.2, alpha: lightRGBA.3) })
+    }
+
     /// Kleur met een eigen waarde voor licht en donker.
     init(light: UInt32, dark: UInt32) {
         func rgb(_ hex: UInt32) -> (CGFloat, CGFloat, CGFloat) {
