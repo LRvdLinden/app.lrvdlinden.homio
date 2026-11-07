@@ -293,30 +293,36 @@ struct QuickActionsMenu: View {
     }
 }
 
-/// Knop voor een scène.
+/// Sfeer als pil, zoals een Mood in Homey: rond verloop-icoon en de naam.
 struct SceneChip: View {
     let name: String
     let symbol: String
     let action: () -> Void
-    @State private var fired = false
+    @State private var fired = 0
 
     var body: some View {
         Button {
             action()
-            fired.toggle()
+            fired += 1
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 8) {
                 Image(systemName: symbol)
-                    .foregroundStyle(Theme.amber)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Theme.moodGradient))
                     .symbolEffect(.bounce, value: fired)
-                Text(name).font(.headline).lineLimit(1)
+                Text(name)
+                    .font(HomeyFont.smallMedium)
+                    .foregroundStyle(Theme.text)
+                    .lineLimit(1)
             }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 14)
-            .glassCard()
+            .padding(4)
+            .padding(.trailing, 10)
+            .frame(height: 40)
+            .background(Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 3, y: 2))
         }
         .buttonStyle(PressableStyle())
-        .foregroundStyle(.primary)
         .sensoryFeedback(.success, trigger: fired)
     }
 }

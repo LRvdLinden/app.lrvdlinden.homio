@@ -25,6 +25,9 @@ final class FlowStore: ObservableObject {
     /// Actiegroepen die Homio voor flows heeft gemaakt; die tonen we niet als sfeer.
     @Published private(set) var ownedActionSetIDs: Set<String> = []
     @Published var lastError: String?
+    /// Favoriete flows (trigger-ID's), zoals de favorieten in Homey.
+    @Published private(set) var favoriteIDs: Set<String> =
+        Set(UserDefaults.standard.stringArray(forKey: "homio.flows.favorites") ?? [])
 
     private let key = "homio.flows.v1"
 
@@ -150,6 +153,21 @@ final class FlowStore: ObservableObject {
             lastError = error.localizedDescription
         }
         store.bump()
+    }
+
+    func isFavorite(_ trigger: HMTrigger) -> Bool {
+        favoriteIDs.contains(trigger.uniqueIdentifier.uuidString)
+    }
+
+    func toggleFavorite(_ trigger: HMTrigger) {
+        let id = trigger.uniqueIdentifier.uuidString
+        if favoriteIDs.contains(id) { favoriteIDs.remove(id) } else { favoriteIDs.insert(id) }
+        UserDefaults.standard.set(Array(favoriteIDs), forKey: "homio.flows.favorites")
+    }
+
+    /// Aantal acties in een flow (voor "3 acties" onder de naam).
+    func actionCount(_ trigger: HMTrigger) -> Int {
+        trigger.actionSets.reduce(0) { $0 + $1.actions.count }
     }
 
     /// Voert de acties van een flow nu meteen uit.

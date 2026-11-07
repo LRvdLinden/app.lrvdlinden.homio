@@ -7,7 +7,8 @@ struct FlowEditTarget: Identifiable {
     let trigger: HMTrigger?
 }
 
-/// Het Flows-tabblad: alle automatiseringen, met aan/uit, nu uitvoeren, bewerken en verwijderen.
+/// Het Flows-tabblad zoals in Homey: favorieten als pillen met startknop, daarna alle
+/// flows als rijen met een ronde startknop, en sjablonen om snel te beginnen.
 struct FlowsTab: View {
     @EnvironmentObject private var home: HomeStore
     @EnvironmentObject private var flows: FlowStore
@@ -15,31 +16,54 @@ struct FlowsTab: View {
 
     @State private var editing: FlowEditTarget?
     @State private var toDelete: HMTrigger?
+    @State private var query = ""
+    @State private var info: HMTrigger?
+
+    private var filtered: [HMTrigger] {
+        let all = home.triggers.sorted { $0.name.localizedCompare($1.name) == .orderedAscending }
+        guard !query.isEmpty else { return all }
+        return all.filter { $0.name.localizedCaseInsensitiveContains(query) }
+    }
 
     var body: some View {
         NavigationStack {
             HomeStateGate {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 16) {
-                        intro
-                        if home.triggers.isEmpty {
-                            emptyState
-                        } else {
-                            LazyVGrid(columns: [GridItem(.adaptive(minimum: sizeClass == .compact ? 300 : 360), spacing: 14)],
-                                      spacing: 14) {
-                                ForEach(home.triggers, id: \.uniqueIdentifier) { trigger in
-                                    FlowCard(trigger: trigger,
-                                             onEdit: { edit(trigger) },
-                                             onDelete: { toDelete = trigger })
+                    VStack(alignment: .leading, spacing: 28) {
+                        let favorites = home.triggers.filter { flows.isFavorite($0) }
+                        if !favorites.isEmpty && query.isEmpty {
+                            VStack(alignment: .leading, spacing: 10) {
+                                SectionHeading(title: "Favoriete flows", subtitle: nil)
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
+                                    ForEach(favorites, id: \.uniqueIdentifier) { trigger in
+                                        FlowPill(trigger: trigger)
+                                    }
                                 }
                             }
                         }
-                        templates
+
+                        VStack(alignment: .leading, spacing: 10) {
+                            SectionHeading(title: "Alle flows",
+                                           subtitle: "Flows draaien op je woninghub, ook als Homio dicht is.")
+                            if filtered.isEmpty {
+                                emptyState
+                            } else {
+                                VStack(spacing: 8) {
+                                    ForEach(filtered, id: \.uniqueIdentifier) { trigger in
+                                        FlowRow(trigger: trigger,
+                                                onOpen: { open(trigger) },
+                                                onDelete: { toDelete = trigger })
+                                    }
+                                }
+                            }
+                        }
+                        if query.isEmpty { templates }
                     }
-                    .padding(.horizontal, sizeClass == .compact ? 16 : 28)
+                    .padding(.horizontal, sizeClass == .compact ? Theme.edge : Theme.edgeTablet)
                     .padding(.vertical, 12)
                 }
                 .scrollIndicators(.hidden)
+                .searchable(text: $query, prompt: "Zoek een flow")
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
@@ -67,6 +91,11 @@ struct FlowsTab: View {
                     toDelete = nil
                 }
             }
+            .alert(info?.name ?? "", isPresented: Binding(get: { info != nil }, set: { if !$0 { info = nil } })) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Deze flow is gemaakt in de Woning-app. In Homio kun je hem aan- en uitzetten en starten; bewerken doe je in de Woning-app.\n\n" + (info.map { flows.summary(for: $0) } ?? ""))
+            }
             .alert("Er ging iets mis", isPresented: Binding(
                 get: { flows.lastError != nil },
                 set: { if !$0 { flows.lastError = nil } }
@@ -78,39 +107,41 @@ struct FlowsTab: View {
         }
     }
 
-    private func edit(_ trigger: HMTrigger) {
+    private func open(_ trigger: HMTrigger) {
         if let draft = flows.draft(for: trigger) {
             editing = FlowEditTarget(draft: draft, trigger: trigger)
-        }
-    }
-
-    private var intro: some View {
-        HStack(spacing: 10) {
-            FlowBadge(text: "ALS", color: IconPalette.orange)
-            FlowBadge(text: "EN", color: IconPalette.yellow)
-            FlowBadge(text: "DAN", color: IconPalette.blue)
-            Text("Flows draaien op je woninghub, ook als Homio dicht is.")
-                .font(.footnote)
-                .foregroundStyle(Theme.textLight)
+        } else {
+            info = trigger
         }
     }
 
     private var emptyState: some View {
         VStack(alignment: .leading, spacing: 12) {
-            GradientIcon(symbol: "arrow.triangle.branch", colors: [IconPalette.orange, IconPalette.blue], size: 56)
-            Text("Laat je huis zelf werken").font(.title2.weight(.bold))
-            Text("Maak een flow: als er iets gebeurt, en het klopt, dan doet Homio iets. Bijvoorbeeld: als de gang beweging ziet en het is donker, dan gaat de ganglamp aan en na 5 minuten weer uit.")
-                .foregroundStyle(Theme.textLight)
-            Button {
-                editing = FlowEditTarget(draft: FlowDraft(), trigger: nil)
-            } label: {
-                Label("Nieuwe flow", systemImage: "plus")
+            Image(systemName: "arrow.triangle.branch")
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 52, height: 52)
+                .background(Circle().fill(Theme.blueGradient))
+            Text(query.isEmpty ? "Laat je huis zelf werken" : "Geen flow gevonden").font(HomeyFont.large.weight(.bold))
+            if query.isEmpty {
+                Text("Een flow is een zin: als er iets gebeurt, en het klopt, dan doet Homio iets. Bijvoorbeeld: als de gang beweging ziet en het is donker, dan gaat de ganglamp aan en na 5 minuten weer uit.")
+                    .foregroundStyle(Theme.textLight)
+                Button {
+                    editing = FlowEditTarget(draft: FlowDraft(), trigger: nil)
+                } label: {
+                    Label("Nieuwe flow", systemImage: "plus")
+                        .font(HomeyFont.bodyMedium)
+                        .padding(.horizontal, 20)
+                        .frame(height: 44)
+                        .background(Capsule().fill(Theme.accent))
+                        .foregroundStyle(.white)
+                }
+                .buttonStyle(PressableStyle())
             }
-            .buttonStyle(.borderedProminent)
         }
-        .padding(22)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .card()
+        .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.card))
     }
 
     // MARK: Snelstart-sjablonen
@@ -210,78 +241,130 @@ struct FlowBadge: View {
     }
 }
 
-private struct FlowCard: View {
+/// Kop van een sectie, zoals in Homey: vet, met een grijze uitleg eronder.
+struct SectionHeading: View {
+    let title: String
+    let subtitle: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title).font(HomeyFont.large.weight(.bold)).foregroundStyle(Theme.text)
+            if let subtitle {
+                Text(subtitle).font(HomeyFont.small).foregroundStyle(Theme.textLight)
+            }
+        }
+    }
+}
+
+/// Ronde startknop van een flow (blauw verloop, grijs als hij uit staat).
+struct FlowRunButton: View {
     let trigger: HMTrigger
-    let onEdit: () -> Void
+    var size: CGFloat = 40
+    @EnvironmentObject private var flows: FlowStore
+    @State private var ran = 0
+
+    var body: some View {
+        Button {
+            flows.run(trigger)
+            ran += 1
+        } label: {
+            Image(systemName: "play.fill")
+                .font(.system(size: size * 0.36, weight: .bold))
+                .foregroundStyle(.white)
+                .offset(x: size * 0.03)
+                .frame(width: size, height: size)
+                .background(Circle().fill(trigger.isEnabled ? AnyShapeStyle(Theme.blueGradient) : AnyShapeStyle(Theme.textLight)))
+                .symbolEffect(.bounce, value: ran)
+        }
+        .buttonStyle(PressableStyle())
+        .sensoryFeedback(.success, trigger: ran)
+        .accessibilityLabel("\(trigger.name) nu uitvoeren")
+    }
+}
+
+/// Favoriete flow als pil (Homey FlowTileSmall): startknop + naam.
+private struct FlowPill: View {
+    let trigger: HMTrigger
+
+    var body: some View {
+        HStack(spacing: 8) {
+            FlowRunButton(trigger: trigger, size: 32)
+            Text(trigger.name)
+                .font(HomeyFont.smallMedium)
+                .foregroundStyle(Theme.text)
+                .lineLimit(1)
+            Spacer(minLength: 4)
+        }
+        .padding(4)
+        .frame(height: 40)
+        .background(Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 3, y: 2))
+    }
+}
+
+/// Eén flow in de lijst: startknop, naam, aantal acties en status.
+private struct FlowRow: View {
+    let trigger: HMTrigger
+    let onOpen: () -> Void
     let onDelete: () -> Void
 
     @EnvironmentObject private var flows: FlowStore
-    @EnvironmentObject private var home: HomeStore
-    @State private var ran = false
 
     private var editable: Bool { flows.draft(for: trigger) != nil }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .top, spacing: 12) {
-                GradientIcon(symbol: "arrow.triangle.branch",
-                             colors: trigger.isEnabled ? [IconPalette.orange, IconPalette.blue] : [Color.gray, Color.gray.opacity(0.6)],
-                             size: 42)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(trigger.name).font(.headline).lineLimit(2)
-                    if let last = trigger.lastFireDate {
-                        Text("Laatst: \(last.formatted(.relative(presentation: .named)))")
-                            .font(.caption)
+        HStack(spacing: 12) {
+            FlowRunButton(trigger: trigger)
+            Button(action: onOpen) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 6) {
+                            Text(trigger.name)
+                                .font(HomeyFont.bodyMedium)
+                                .foregroundStyle(Theme.text)
+                                .lineLimit(1)
+                            if flows.isFavorite(trigger) {
+                                Image(systemName: "heart.fill").font(.caption2).foregroundStyle(Theme.red)
+                            }
+                        }
+                        Text(subtitle)
+                            .font(HomeyFont.tiny)
                             .foregroundStyle(Theme.textLight)
+                            .lineLimit(1)
                     }
+                    Spacer(minLength: 0)
+                    Image(systemName: editable ? "chevron.right" : "info.circle")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(Theme.iconLight)
                 }
-                Spacer()
-                Toggle("Aan", isOn: Binding(
-                    get: { trigger.isEnabled },
-                    set: { value in Task { await flows.setEnabled(trigger, value) } }
-                ))
-                .labelsHidden()
-                .tint(IconPalette.blue)
+                .contentShape(Rectangle())
             }
-            Text(flows.summary(for: trigger))
-                .font(.subheadline)
-                .foregroundStyle(Color.primary.opacity(0.75))
-                .lineLimit(4)
-            HStack(spacing: 8) {
-                Button {
-                    flows.run(trigger)
-                    ran.toggle()
-                } label: {
-                    Label("Nu uitvoeren", systemImage: "play.fill")
-                }
-                .buttonStyle(.bordered)
-                .tint(IconPalette.blue)
-                Spacer()
-                if editable {
-                    Button(action: onEdit) { Image(systemName: "pencil") }
-                        .buttonStyle(.bordered)
-                        .accessibilityLabel("Bewerken")
-                }
-                Button(role: .destructive, action: onDelete) { Image(systemName: "trash") }
-                    .buttonStyle(.bordered)
-                    .accessibilityLabel("Verwijderen")
-            }
-            .font(.subheadline.weight(.semibold))
-            if !editable {
-                Text("Gemaakt in de Woning-app. Aan/uit en uitvoeren kan hier; bewerken in de Woning-app.")
-                    .font(.caption2)
-                    .foregroundStyle(Theme.textLight)
-            }
+            .buttonStyle(.plain)
         }
-        .padding(18)
-        .card()
-        .sensoryFeedback(.success, trigger: ran)
+        .padding(.horizontal, 10)
+        .frame(height: 60)
+        .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.card))
+        .opacity(trigger.isEnabled ? 1 : 0.6)
         .contextMenu {
             Button { flows.run(trigger) } label: { Label("Nu uitvoeren", systemImage: "play.fill") }
-            if editable {
-                Button(action: onEdit) { Label("Bewerken", systemImage: "pencil") }
+            Button { flows.toggleFavorite(trigger) } label: {
+                Label(flows.isFavorite(trigger) ? "Uit favorieten" : "Aan favorieten", systemImage: "heart")
             }
+            Button {
+                Task { await flows.setEnabled(trigger, !trigger.isEnabled) }
+            } label: {
+                Label(trigger.isEnabled ? "Uitschakelen" : "Inschakelen",
+                      systemImage: trigger.isEnabled ? "pause.circle" : "checkmark.circle")
+            }
+            Button(action: onOpen) { Label(editable ? "Bewerken" : "Info", systemImage: editable ? "pencil" : "info.circle") }
             Button(role: .destructive, action: onDelete) { Label("Verwijderen", systemImage: "trash") }
         }
+    }
+
+    private var subtitle: String {
+        if !trigger.isEnabled { return "Uitgeschakeld" }
+        let count = flows.actionCount(trigger)
+        var parts = [count == 1 ? "1 actie" : "\(count) acties"]
+        if !editable { parts.append("uit de Woning-app") }
+        return parts.joined(separator: " · ")
     }
 }

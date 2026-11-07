@@ -9,6 +9,7 @@ struct HomeTab: View {
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var weather: WeatherService
     @EnvironmentObject private var matter: MatterStore
+    @EnvironmentObject private var flows: FlowStore
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var zone: Zone = .favorites
@@ -193,7 +194,7 @@ struct HomeTab: View {
 
     private var scenesRow: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sferen").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
+            SectionHeading(title: "Sferen", subtitle: nil)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(home.scenes, id: \.uniqueIdentifier) { scene in
@@ -214,18 +215,38 @@ struct HomeTab: View {
                     }
                     Button { sceneEdit = SceneEditTarget(scene: nil) } label: {
                         Label("Nieuwe sfeer", systemImage: "plus")
-                            .font(.headline)
-                            .padding(.horizontal, 18)
-                            .padding(.vertical, 14)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
-                                    .strokeBorder(Color.primary.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                            )
+                            .font(HomeyFont.smallMedium)
+                            .padding(.horizontal, 14)
+                            .frame(height: 40)
+                            .background(Capsule().fill(Theme.accent.opacity(0.08)))
+                            .overlay(Capsule().strokeBorder(Theme.accent.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
                     }
                     .buttonStyle(PressableStyle())
-                    .foregroundStyle(Color.primary.opacity(0.8))
+                    .foregroundStyle(Theme.accent)
                 }
-                .padding(.vertical, 2)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 2)
+            }
+            let favoriteFlows = home.triggers.filter { flows.isFavorite($0) }
+            if !favoriteFlows.isEmpty {
+                SectionHeading(title: "Favoriete flows", subtitle: nil)
+                    .padding(.top, 8)
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 10) {
+                        ForEach(favoriteFlows, id: \.uniqueIdentifier) { trigger in
+                            HStack(spacing: 8) {
+                                FlowRunButton(trigger: trigger, size: 32)
+                                Text(trigger.name).font(HomeyFont.smallMedium).foregroundStyle(Theme.text).lineLimit(1)
+                            }
+                            .padding(4)
+                            .padding(.trailing, 10)
+                            .frame(height: 40)
+                            .background(Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 3, y: 2))
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    .padding(.horizontal, 2)
+                }
             }
         }
     }
@@ -363,7 +384,7 @@ private struct RoomSection: View {
                     onOpen?()
                 } label: {
                     HStack(spacing: 6) {
-                        Text(room.name).font(.title2.weight(.bold))
+                        Text(room.name).font(HomeyFont.large.weight(.bold))
                         if onOpen != nil {
                             Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.textLight)
                         }

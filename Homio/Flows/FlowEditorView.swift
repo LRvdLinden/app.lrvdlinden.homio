@@ -1,7 +1,8 @@
 import HomeKit
 import SwiftUI
 
-/// Flow-editor in drie stappen: ALS (oranje), EN (geel), DAN (blauw).
+/// Flow-editor zoals in Homey: drie blokken (Als… En… Dan…) met kaarten.
+/// Tik op een kaart om hem in te stellen; houd vast om te verwijderen.
 struct FlowEditorView: View {
     let replacing: HMTrigger?
 
@@ -12,103 +13,84 @@ struct FlowEditorView: View {
     @State private var draft: FlowDraft
     @State private var saving = false
     @State private var error: String?
+    @State private var picking: FlowCardType?
+    @State private var editing: FlowCardRef?
+    @State private var tested = false
 
     init(initial: FlowDraft, replacing: HMTrigger?) {
         self.replacing = replacing
         _draft = State(initialValue: initial)
     }
 
-    private var triggerDevices: [Device] { home.devices.filter(\.canTrigger) }
-    private var conditionDevices: [Device] { home.devices.filter(\.hasStateCondition) }
+    private var factory: FlowCardFactory { FlowCardFactory(home: home) }
+    private var hasTrigger: Bool { draft.when.kind != .device || draft.when.deviceID != nil }
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Naam (bijv. Licht in de gang)", text: $draft.name)
-                    Toggle("Ingeschakeld", isOn: $draft.enabled)
-                }
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField("Naam van de flow", text: $draft.name)
+                            .font(HomeyFont.xlarge)
+                            .submitLabel(.done)
+                        Toggle(isOn: $draft.enabled) {
+                            Text(draft.enabled ? "Ingeschakeld" : "Uitgeschakeld")
+                                .font(HomeyFont.small)
+                                .foregroundStyle(Theme.textLight)
+                        }
+                        .tint(Theme.green)
+                    }
 
-                // ALS
-                Section {
-                    Picker("Wat", selection: $draft.when.kind) {
-                        ForEach(WhenKind.allCases, id: \.self) { kind in
-                            Label(kind.title, systemImage: kind.symbol).tag(kind)
+                    block(.when) {
+                        if hasTrigger {
+                            let c = factory.when(draft.when)
+                            card(c, ref: .when, deletable: false)
+                        } else {
+                            AddCardButton(title: FlowCardType.when.addTitle) { picking = .when }
                         }
                     }
-                    whenFields
-                } header: {
-                    StepHeader(badge: "ALS", color: IconPalette.orange, text: draft.whenText(home))
-                }
 
-                // EN
-                Section {
-                    ForEach($draft.ands) { $card in
-                        AndRow(card: $card, devices: conditionDevices)
-                    }
-                    .onDelete { draft.ands.remove(atOffsets: $0) }
-                    Menu {
-                        ForEach(AndKind.allCases, id: \.self) { kind in
-                            Button {
-                                var card = AndCard(kind: kind)
-                                if kind == .deviceState { card.deviceID = conditionDevices.first?.id }
-                                draft.ands.append(card)
-                            } label: {
-                                Label(kind.title, systemImage: kind.symbol)
-                            }
+                    block(.and) {
+                        ForEach(draft.ands) { andCard in
+                            card(factory.and(andCard), ref: .and(andCard.id), deletable: true)
                         }
-                    } label: {
-                        Label("Voorwaarde toevoegen", systemImage: "plus.circle.fill")
-                            .foregroundStyle(IconPalette.yellow)
+                        AddCardButton(title: FlowCardType.and.addTitle) { picking = .and }
                     }
-                } header: {
-                    StepHeader(badge: "EN", color: IconPalette.yellow,
-                               text: draft.ands.isEmpty ? "Altijd (geen voorwaarden)" : "\(draft.ands.count) voorwaarde(n)")
-                } footer: {
-                    Text("Alle voorwaarden moeten kloppen. Veeg naar links om er een te verwijderen.")
-                }
 
-                // DAN
-                Section {
-                    ForEach($draft.thens) { $step in
-                        ActionRow(step: $step, allowScene: true)
+                    block(.then) {
+                        ForEach(draft.thens) { step in
+                            card(factory.then(step), ref: .then(step.id), deletable: true)
+                        }
+                        if draft.revertAfterMinutes > 0 {
+                            card(factory.revert(draft.revertAfterMinutes), ref: .revert, deletable: true)
+                        }
+                        AddCardButton(title: FlowCardType.then.addTitle) { picking = .then }
                     }
-                    .onDelete { draft.thens.remove(atOffsets: $0) }
-                    Menu {
+
+                    if let replacing {
                         Button {
-                            if let device = home.devices.first(where: \.canBeControlled) {
-                                draft.thens.append(ActionStep.defaults(for: device))
-                            }
-                        } label: { Label("Apparaat bedienen", systemImage: "lightbulb.fill") }
-                        Button {
-                            draft.thens.append(ActionStep(mode: .scene, sceneID: home.scenes.first?.uniqueIdentifier))
-                        } label: { Label("Sfeer starten", systemImage: "sparkles") }
-                        .disabled(home.scenes.isEmpty)
-                    } label: {
-                        Label("Actie toevoegen", systemImage: "plus.circle.fill")
-                            .foregroundStyle(IconPalette.blue)
-                    }
-                    Picker("Daarna terug na", selection: $draft.revertAfterMinutes) {
-                        Text("Nooit").tag(0)
-                        ForEach([1, 2, 5, 10, 15, 30, 60], id: \.self) { m in
-                            Text("\(m) min").tag(m)
+                            flows.run(replacing)
+                            tested.toggle()
+                        } label: {
+                            Label("Test deze flow", systemImage: "play.fill")
+                                .font(HomeyFont.bodyMedium)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 50)
+                                .background(Capsule().fill(Theme.blueGradient))
+                                .foregroundStyle(.white)
                         }
+                        .buttonStyle(PressableStyle())
+                        .sensoryFeedback(.success, trigger: tested)
+                        Text("Test voert de bewaarde versie uit, zonder op de trigger te wachten.")
+                            .font(HomeyFont.tiny)
+                            .foregroundStyle(Theme.textLight)
                     }
-                } header: {
-                    StepHeader(badge: "DAN", color: IconPalette.blue,
-                               text: draft.thens.isEmpty ? "Nog geen acties" : "\(draft.thens.count) actie(s)")
-                } footer: {
-                    Text("Met 'Daarna terug na' zet de woninghub alles na die tijd weer terug, bijvoorbeeld de lamp uit na beweging.")
                 }
-
-                Section {
-                    Text(draft.summary(home))
-                        .font(.callout)
-                        .foregroundStyle(Theme.textLight)
-                } header: {
-                    Text("Samenvatting")
-                }
+                .padding(Theme.edge)
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
             }
+            .background(Theme.background)
             .navigationTitle(replacing == nil ? "Nieuwe flow" : "Flow bewerken")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -121,9 +103,19 @@ struct FlowEditorView: View {
                     } else {
                         Button("Bewaar") { save() }
                             .fontWeight(.semibold)
-                            .disabled(draft.thens.isEmpty)
+                            .disabled(draft.thens.isEmpty || !hasTrigger)
                     }
                 }
+            }
+            .sheet(item: $picking) { type in
+                FlowCardPicker(type: type, draft: $draft) { ref in
+                    // Kaarten met waarden meteen openen om in te stellen.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.45) { editing = ref }
+                }
+            }
+            .sheet(item: $editing) { ref in
+                FlowCardEditSheet(ref: ref, draft: $draft)
+                    .presentationDetents([.medium, .large])
             }
             .alert("Bewaren lukte niet", isPresented: Binding(get: { error != nil }, set: { if !$0 { error = nil } })) {
                 Button("OK", role: .cancel) {}
@@ -134,42 +126,158 @@ struct FlowEditorView: View {
         .interactiveDismissDisabled(saving)
     }
 
-    // MARK: ALS-velden
+    private func block<Content: View>(_ type: FlowCardType, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(type.heading).font(HomeyFont.large.weight(.bold))
+                Text(type.question).font(HomeyFont.small).foregroundStyle(Theme.textLight)
+            }
+            content()
+        }
+    }
+
+    private func card(_ c: (CardIcon, String, [CardText], Bool), ref: FlowCardRef, deletable: Bool) -> some View {
+        Button { editing = ref } label: {
+            FlowCardView(icon: c.0, owner: c.1, parts: c.2, invalid: c.3)
+        }
+        .buttonStyle(PressableStyle())
+        .contextMenu {
+            Button { editing = ref } label: { Label("Instellen", systemImage: "slider.horizontal.3") }
+            if ref == .when {
+                Button { picking = .when } label: { Label("Andere trigger kiezen", systemImage: "arrow.triangle.2.circlepath") }
+            }
+            if deletable {
+                Button(role: .destructive) { remove(ref) } label: { Label("Verwijderen", systemImage: "trash") }
+            }
+        }
+    }
+
+    private func remove(_ ref: FlowCardRef) {
+        withAnimation {
+            switch ref {
+            case .when: break
+            case .and(let id): draft.ands.removeAll { $0.id == id }
+            case .then(let id): draft.thens.removeAll { $0.id == id }
+            case .revert: draft.revertAfterMinutes = 0
+            }
+        }
+    }
+
+    private func save() {
+        saving = true
+        Task {
+            do {
+                try await flows.save(draft, replacing: replacing)
+                saving = false
+                dismiss()
+            } catch {
+                saving = false
+                self.error = error.localizedDescription
+            }
+        }
+    }
+}
+
+/// Een kaart instellen: de kaart bovenaan, eronder de waarden.
+struct FlowCardEditSheet: View {
+    let ref: FlowCardRef
+    @Binding var draft: FlowDraft
+
+    @EnvironmentObject private var home: HomeStore
+    @Environment(\.dismiss) private var dismiss
+
+    private var factory: FlowCardFactory { FlowCardFactory(home: home) }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    preview
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
+                switch ref {
+                case .when:
+                    Section { WhenFields(draft: $draft) }
+                case .and(let id):
+                    if let index = draft.ands.firstIndex(where: { $0.id == id }) {
+                        Section {
+                            AndRow(card: $draft.ands[index], devices: home.devices.filter(\.hasStateCondition))
+                        }
+                    }
+                case .then(let id):
+                    if let index = draft.thens.firstIndex(where: { $0.id == id }) {
+                        Section { ActionRow(step: $draft.thens[index], allowScene: true) }
+                    }
+                case .revert:
+                    Section {
+                        Picker("Terugzetten na", selection: $draft.revertAfterMinutes) {
+                            ForEach([1, 2, 5, 10, 15, 30, 60], id: \.self) { m in
+                                Text("\(m) min").tag(m)
+                            }
+                        }
+                    } footer: {
+                        Text("Handig bij beweging: lamp aan, en na een paar minuten weer uit.")
+                    }
+                }
+            }
+            .navigationTitle("Kaart instellen")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Gereed") { dismiss() }.fontWeight(.semibold)
+                }
+            }
+        }
+    }
 
     @ViewBuilder
-    private var whenFields: some View {
+    private var preview: some View {
+        switch ref {
+        case .when:
+            let c = factory.when(draft.when)
+            FlowCardView(icon: c.0, owner: c.1, parts: c.2, invalid: c.3)
+        case .and(let id):
+            if let card = draft.ands.first(where: { $0.id == id }) {
+                let c = factory.and(card)
+                FlowCardView(icon: c.0, owner: c.1, parts: c.2, invalid: c.3)
+            }
+        case .then(let id):
+            if let step = draft.thens.first(where: { $0.id == id }) {
+                let c = factory.then(step)
+                FlowCardView(icon: c.0, owner: c.1, parts: c.2, invalid: c.3)
+            }
+        case .revert:
+            let c = factory.revert(draft.revertAfterMinutes)
+            FlowCardView(icon: c.0, owner: c.1, parts: c.2, invalid: c.3)
+        }
+    }
+}
+
+/// De instelbare waarden van de trigger-kaart.
+struct WhenFields: View {
+    @Binding var draft: FlowDraft
+    @EnvironmentObject private var home: HomeStore
+
+    private var triggerDevices: [Device] { home.devices.filter(\.canTrigger) }
+
+    var body: some View {
         switch draft.when.kind {
         case .device:
-            if triggerDevices.isEmpty {
-                Text("Geen apparaten die iets kunnen melden.").foregroundStyle(Theme.textLight)
+            if let id = draft.when.deviceID, let device = home.device(id: id) {
+                Picker("Gebeurtenis", selection: $draft.when.event) {
+                    ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { e in
+                        Text(e.label.capitalizedFirst).tag(e)
+                    }
+                }
+                if draft.when.event.needsThreshold {
+                    Stepper(value: $draft.when.threshold, in: device.kind == .humidity ? 0.0...100.0 : -10.0...40.0,
+                            step: device.kind == .humidity ? 5 : 0.5) {
+                        LabeledContent("Grens", value: "\(draft.when.threshold.oneDecimal)\(device.thresholdUnit)")
+                    }
+                }
             } else {
-                Picker("Apparaat", selection: Binding(
-                    get: { draft.when.deviceID ?? triggerDevices.first?.id },
-                    set: { id in
-                        draft.when.deviceID = id
-                        if let id, let device = home.device(id: id) {
-                            let options = DeviceEventKind.options(for: device.kind)
-                            if !options.contains(draft.when.event), let first = options.first { draft.when.event = first }
-                        }
-                    }
-                )) {
-                    ForEach(triggerDevices) { device in
-                        Text("\(device.name) · \(device.roomName)").tag(Optional(device.id))
-                    }
-                }
-                if let device = home.device(id: draft.when.deviceID ?? triggerDevices.first?.id ?? UUID()) {
-                    Picker("Gebeurtenis", selection: $draft.when.event) {
-                        ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { e in
-                            Text(e.label).tag(e)
-                        }
-                    }
-                    if draft.when.event.needsThreshold {
-                        Stepper(value: $draft.when.threshold, in: device.kind == .humidity ? 0.0...100.0 : -10.0...40.0,
-                                step: device.kind == .humidity ? 5 : 0.5) {
-                            LabeledContent("Grens", value: "\(draft.when.threshold.oneDecimal)\(device.thresholdUnit)")
-                        }
-                    }
-                }
+                Text("Kies een apparaat met \"Andere trigger kiezen\".").foregroundStyle(Theme.textLight)
             }
         case .time:
             DatePicker("Tijd", selection: timeBinding, displayedComponents: .hourAndMinute)
@@ -210,24 +318,6 @@ struct FlowEditorView: View {
                 draft.when.minute = c.minute ?? 0
             }
         )
-    }
-
-    private func save() {
-        var toSave = draft
-        if toSave.when.kind == .device && toSave.when.deviceID == nil {
-            toSave.when.deviceID = triggerDevices.first?.id
-        }
-        saving = true
-        Task {
-            do {
-                try await flows.save(toSave, replacing: replacing)
-                saving = false
-                dismiss()
-            } catch {
-                saving = false
-                self.error = error.localizedDescription
-            }
-        }
     }
 }
 
