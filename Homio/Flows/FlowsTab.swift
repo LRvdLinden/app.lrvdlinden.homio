@@ -132,6 +132,14 @@ struct FlowsTab: View {
                         d.revertAfterMinutes = 5
                         return d
                     }
+                    template("Thuiskomen in het donker", "figure.walk.arrival") {
+                        var d = FlowDraft(name: "Thuiskomen in het donker")
+                        d.when.kind = .presence
+                        d.when.presence = .anyoneArrives
+                        d.ands = [AndCard(kind: .night)]
+                        d.thens = home.devices.filter { $0.kind == .light }.prefix(3).map { ActionStep.defaults(for: $0) }
+                        return d
+                    }
                     template("Welterusten om 23:00", "moon.fill") {
                         var d = FlowDraft(name: "Welterusten")
                         d.when.kind = .time
