@@ -1,5 +1,5 @@
 import Foundation
-import Matter
+@preconcurrency import Matter
 
 /// Waarden in het Matter "data-value"-formaat ([type: …, value: …]).
 enum MatterValue {

@@ -1,6 +1,6 @@
 import CryptoKit
 import Foundation
-import Matter
+@preconcurrency import Matter
 import Security
 
 /// Homio's eigen Matter-netwerk (fabric). De geheimen (root-sleutel, IPK, fabric-ID en
@@ -168,7 +168,7 @@ enum MatterControllerFactory {
 
         let factory = MTRDeviceControllerFactory.sharedInstance()
         if !factory.isRunning {
-            try factory.startControllerFactory(MTRDeviceControllerFactoryParams(storage: MatterStorage(prefix: prefix)))
+            try factory.start(MTRDeviceControllerFactoryParams(storage: MatterStorage(prefix: prefix)))
         }
 
         var secrets = try FabricVault.loadOrCreate()

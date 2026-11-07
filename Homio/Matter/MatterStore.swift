@@ -1,7 +1,7 @@
 import Combine
 import HomeKit
 import Foundation
-import Matter
+@preconcurrency import Matter
 import SwiftUI
 
 /// Een via Homio gekoppeld Matter-apparaat (node), zoals bewaard en via iCloud gedeeld.

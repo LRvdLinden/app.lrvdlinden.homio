@@ -1,5 +1,5 @@
 import Foundation
-import Matter
+@preconcurrency import Matter
 import MatterSupport
 
 /// Koppel-extensie: iOS doet het koppelscherm (QR scannen, Bluetooth, wifi/Thread) en
