@@ -124,6 +124,16 @@ struct SettingsView: View {
                     Text("Meldingen")
                 }
 
+                Section {
+                    NavigationLink {
+                        MatterSettingsView()
+                    } label: {
+                        Label("Matter", systemImage: "dot.radiowaves.left.and.right")
+                    }
+                } footer: {
+                    Text("Eigen Matter-netwerk naast Apple Woning, voor apparaten uit Google, Alexa, SmartThings of Homey.")
+                }
+
                 Section("Woning") {
                     if home.homes.count > 1 {
                         Picker("Woning", selection: Binding(
@@ -184,7 +194,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Over")
                 } footer: {
-                    Text("Weergegevens: Open-Meteo.com (CC BY 4.0)")
+                    Text("Weergegevens: Open-Meteo.com (CC BY 4.0). Merk-iconen: custom-brand-icons door elax46 (MIT).")
                 }
 
                 Section {

@@ -15,6 +15,7 @@ struct AppShell: View {
     @State private var tab: AppTab = .home
     @State private var displayMode = false
     @State private var didAutoStart = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         TabView(selection: $tab) {
@@ -47,7 +48,12 @@ struct AppShell: View {
             if ready {
                 PushRelay.shared.applyDefaultsIfNeeded(home.devices)
                 HomioShortcuts.updateAppShortcutParameters()
+                MatterStore.shared.publishRooms(home.allRooms.map(\.name))
             }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Apparaten die via het koppelscherm van Apple zijn toegevoegd, overnemen.
+            if phase == .active { MatterStore.shared.start() }
         }
         .onAppear {
             settings.ensureProfile(named: auth.displayName)
@@ -55,6 +61,7 @@ struct AppShell: View {
             home.start()
             history.start()
             CloudSync.shared.syncNow()
+            MatterStore.shared.start()
             if settings.proximityEnabled { proximity.start() }
             if settings.startInDisplayMode && !didAutoStart {
                 didAutoStart = true

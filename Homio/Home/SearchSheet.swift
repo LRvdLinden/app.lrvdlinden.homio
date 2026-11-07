@@ -6,10 +6,12 @@ struct SearchSheet: View {
     @EnvironmentObject private var home: HomeStore
     @EnvironmentObject private var groups: GroupStore
     @EnvironmentObject private var flows: FlowStore
+    @EnvironmentObject private var matter: MatterStore
     @Environment(\.dismiss) private var dismiss
 
     @State private var query = ""
     @State private var detail: UUID?
+    @State private var matterDetail: String?
 
     private func matches(_ texts: String...) -> Bool {
         query.isEmpty || texts.contains { $0.localizedCaseInsensitiveContains(query) }
@@ -25,7 +27,7 @@ struct SearchSheet: View {
                             HStack(spacing: 12) {
                                 Button { detail = device.id } label: {
                                     HStack(spacing: 12) {
-                                        Image(systemName: device.symbol)
+                                        DeviceIcon(device: device, size: 22)
                                             .foregroundStyle(device.isOn ? device.tint : Color.secondary)
                                             .frame(width: 28)
                                         VStack(alignment: .leading, spacing: 1) {
@@ -45,6 +47,38 @@ struct SearchSheet: View {
                                     ))
                                     .labelsHidden()
                                     .tint(IconPalette.orange)
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let matterMatches = matter.visibleEndpoints(home: home).filter { matches($0.name, $0.room) }
+                if !matterMatches.isEmpty {
+                    Section("Matter (Homio)") {
+                        ForEach(matterMatches) { e in
+                            let st = matter.state(e)
+                            let on = matter.isOn(e, st)
+                            HStack(spacing: 12) {
+                                Button { matterDetail = e.id } label: {
+                                    HStack(spacing: 12) {
+                                        DeviceIcon(key: e.id, fallback: e.kind.iconName(isOn: on), size: 22)
+                                            .foregroundStyle(on ? e.kind.tint : Color.secondary)
+                                            .frame(width: 28)
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(e.name).foregroundStyle(.primary)
+                                            Text("\(e.room) · \(matter.stateText(e, st))")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                }
+                                .buttonStyle(.plain)
+                                Spacer()
+                                if matter.isToggleable(e, st) {
+                                    Toggle(e.name, isOn: Binding(get: { on }, set: { matter.setOn(e, $0) }))
+                                        .labelsHidden()
+                                        .tint(IconPalette.orange)
                                 }
                             }
                         }
@@ -115,10 +149,20 @@ struct SearchSheet: View {
             )) { item in
                 DeviceDetailSheet(deviceID: item.id)
             }
+            .sheet(item: Binding(
+                get: { matterDetail.map { IdentifiedString(id: $0) } },
+                set: { matterDetail = $0?.id }
+            )) { item in
+                MatterDetailSheet(endpointID: item.id)
+            }
         }
     }
 }
 
 struct IdentifiedUUID: Identifiable {
     let id: UUID
+}
+
+struct IdentifiedString: Identifiable {
+    let id: String
 }

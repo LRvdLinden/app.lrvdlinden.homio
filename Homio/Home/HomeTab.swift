@@ -8,12 +8,14 @@ struct HomeTab: View {
     @EnvironmentObject private var home: HomeStore
     @EnvironmentObject private var settings: SettingsStore
     @EnvironmentObject private var weather: WeatherService
+    @EnvironmentObject private var matter: MatterStore
     @Environment(\.horizontalSizeClass) private var sizeClass
 
     @State private var zone: Zone = .favorites
     @State private var sceneEdit: SceneEditTarget?
     @State private var sceneToDelete: HMActionSet?
     @State private var showSearch = false
+    @State private var showMatterAdd = false
 
     enum Zone: Hashable {
         case favorites, all
@@ -72,7 +74,10 @@ struct HomeTab: View {
                     }
                     Menu {
                         Button { home.addAccessory() } label: {
-                            Label("Apparaat toevoegen", systemImage: "plus.circle")
+                            Label("Apparaat toevoegen (Apple Woning)", systemImage: "plus.circle")
+                        }
+                        Button { showMatterAdd = true } label: {
+                            Label("Matter-apparaat toevoegen (Homio)", systemImage: "dot.radiowaves.left.and.right")
                         }
                         Button { sceneEdit = SceneEditTarget(scene: nil) } label: {
                             Label("Nieuwe sfeer", systemImage: "sparkles")
@@ -85,6 +90,9 @@ struct HomeTab: View {
             }
             .sheet(isPresented: $showSearch) {
                 SearchSheet()
+            }
+            .sheet(isPresented: $showMatterAdd) {
+                MatterAddView()
             }
             .sheet(item: $sceneEdit) { target in
                 SceneEditorView(scene: target.scene)
@@ -171,6 +179,11 @@ struct HomeTab: View {
                         zone = .room(room.name)
                     }
                 }
+                ForEach(matterOnlyRooms, id: \.self) { name in
+                    ZoneChip(title: name, symbol: nil, selected: zone == .room(name)) {
+                        zone = .room(name)
+                    }
+                }
             }
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.8), value: zone)
@@ -251,7 +264,10 @@ struct HomeTab: View {
             ForEach(home.rooms) { room in
                 RoomSection(room: room, columns: columns) { zone = .room(room.name) }
             }
-            if home.devices.isEmpty {
+            ForEach(matterOnlyRooms, id: \.self) { name in
+                RoomSection(room: RoomGroup(name: name, devices: []), columns: columns) { zone = .room(name) }
+            }
+            if home.devices.isEmpty && matter.visibleEndpoints(home: home).isEmpty {
                 ContentUnavailableView {
                     Label("Nog geen apparaten", systemImage: "lightbulb.slash")
                 } description: {
@@ -266,10 +282,19 @@ struct HomeTab: View {
         case .room(let name):
             if let room = home.rooms.first(where: { $0.name == name }) {
                 RoomSection(room: room, columns: columns, onOpen: nil)
+            } else if matterOnlyRooms.contains(name) {
+                RoomSection(room: RoomGroup(name: name, devices: []), columns: columns, onOpen: nil)
             } else {
                 Text("Deze kamer heeft geen apparaten.").foregroundStyle(Theme.textLight)
             }
         }
+    }
+
+    /// Kamers die alleen Matter-apparaten van Homio hebben (niet in Apple Woning).
+    private var matterOnlyRooms: [String] {
+        _ = matter.revision
+        let homeKit = Set(home.rooms.map(\.name))
+        return Array(Set(matter.visibleEndpoints(home: home).map(\.room)).subtracting(homeKit)).sorted()
     }
 
     private var favoriteDevices: [Device] {
@@ -315,6 +340,9 @@ private struct RoomSection: View {
     let onOpen: (() -> Void)?
 
     @EnvironmentObject private var home: HomeStore
+    @EnvironmentObject private var matter: MatterStore
+
+    private var matterDevices: [MatterEndpoint] { matter.endpoints(inRoom: room.name, home: home) }
 
     private var temperature: Double? {
         let temps = room.devices.compactMap { $0.kind == .temperature || $0.kind == .thermostat ? $0.currentTemperature : nil }
@@ -369,6 +397,7 @@ private struct RoomSection: View {
             }
             LazyVGrid(columns: columns, spacing: Theme.gutter) {
                 ForEach(room.devices) { DeviceTile(device: $0) }
+                ForEach(matterDevices) { MatterTile(endpoint: $0) }
             }
         }
     }

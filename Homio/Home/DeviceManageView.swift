@@ -14,6 +14,8 @@ struct DeviceManageView: View {
     @State private var newRoom = ""
     @State private var showNewRoom = false
     @State private var confirmRemove = false
+    @State private var pickIcon = false
+    @ObservedObject private var icons = DeviceIconStore.shared
 
     var body: some View {
         Group {
@@ -36,6 +38,27 @@ struct DeviceManageView: View {
                     .onSubmit { home.rename(device, to: name) }
                 if name != device.name && !name.trimmingCharacters(in: .whitespaces).isEmpty {
                     Button("Naam bewaren") { home.rename(device, to: name) }
+                }
+            }
+
+            Section("Icoon") {
+                Button { pickIcon = true } label: {
+                    HStack(spacing: 14) {
+                        DeviceIcon(device: device, size: 30)
+                            .foregroundStyle(Theme.text)
+                            .frame(width: 48, height: 48)
+                            .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.tileOff))
+                        Text("Kies een icoon")
+                        Spacer()
+                        Image(systemName: "chevron.right").foregroundStyle(Theme.textLight)
+                    }
+                }
+                .foregroundStyle(Theme.text)
+                .sheet(isPresented: $pickIcon) {
+                    IconPickerView(title: device.name,
+                                   current: icons.icon(for: device.id.uuidString) ?? device.iconName) { picked in
+                        icons.set(picked, for: device.id.uuidString)
+                    }
                 }
             }
 

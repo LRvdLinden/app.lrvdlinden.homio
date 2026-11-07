@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		B1C2D3E4F5A600000000000B /* HomioWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = B1C2D3E4F5A6000000000001 /* HomioWatch.app */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C1D2E3F4A5B600000000000B /* HomioMatter.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = C1D2E3F4A5B6000000000001 /* HomioMatter.appex */; platformFilter = ios; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -17,6 +18,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = B1C2D3E4F5A6000000000006;
 			remoteInfo = HomioWatch;
+		};
+		C1D2E3F4A5B600000000000D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A1B2C3D4E5F600000000000A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C1D2E3F4A5B6000000000007;
+			remoteInfo = HomioMatter;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -32,6 +40,17 @@
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1D2E3F4A5B600000000000C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C1D2E3F4A5B600000000000B /* HomioMatter.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -41,6 +60,9 @@
 		A1B2C3D4E5F6000000000001 /* Homio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Homio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A1B2C3D4E5F6000000000010 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		A1B2C3D4E5F6000000000011 /* Homio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Homio.entitlements; sourceTree = "<group>"; };
+		C1D2E3F4A5B6000000000001 /* HomioMatter.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HomioMatter.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C1D2E3F4A5B600000000000F /* HomioMatterExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = HomioMatterExtension.entitlements; sourceTree = "<group>"; };
+		C1D2E3F4A5B6000000000010 /* HomioMatterExtension-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "HomioMatterExtension-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -52,6 +74,16 @@
 		B1C2D3E4F5A6000000000002 /* HomioWatch */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = HomioWatch;
+			sourceTree = "<group>";
+		};
+		C1D2E3F4A5B6000000000002 /* HomioMatterExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = HomioMatterExtension;
+			sourceTree = "<group>";
+		};
+		C1D2E3F4A5B6000000000003 /* HomioMatterCore */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = HomioMatterCore;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -71,6 +103,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1D2E3F4A5B6000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -79,6 +118,10 @@
 			children = (
 				A1B2C3D4E5F6000000000002 /* Homio */,
 				B1C2D3E4F5A6000000000002 /* HomioWatch */,
+				C1D2E3F4A5B6000000000003 /* HomioMatterCore */,
+				C1D2E3F4A5B6000000000002 /* HomioMatterExtension */,
+				C1D2E3F4A5B600000000000F /* HomioMatterExtension.entitlements */,
+				C1D2E3F4A5B6000000000010 /* HomioMatterExtension-Info.plist */,
 				B1C2D3E4F5A600000000000A /* HomioWatch.entitlements */,
 				B1C2D3E4F5A600000000000F /* Homio-mac.entitlements */,
 				A1B2C3D4E5F6000000000010 /* Info.plist */,
@@ -92,6 +135,7 @@
 			children = (
 				A1B2C3D4E5F6000000000001 /* Homio.app */,
 				B1C2D3E4F5A6000000000001 /* HomioWatch.app */,
+				C1D2E3F4A5B6000000000001 /* HomioMatter.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -107,14 +151,17 @@
 				A1B2C3D4E5F6000000000003 /* Frameworks */,
 				A1B2C3D4E5F6000000000008 /* Resources */,
 				B1C2D3E4F5A600000000000C /* Embed Watch Content */,
+				C1D2E3F4A5B600000000000C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				B1C2D3E4F5A600000000000E /* PBXTargetDependency */,
+				C1D2E3F4A5B600000000000E /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				A1B2C3D4E5F6000000000002 /* Homio */,
+				C1D2E3F4A5B6000000000003 /* HomioMatterCore */,
 			);
 			name = Homio;
 			packageProductDependencies = (
@@ -145,6 +192,29 @@
 			productReference = B1C2D3E4F5A6000000000001 /* HomioWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
+		C1D2E3F4A5B6000000000007 /* HomioMatter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C1D2E3F4A5B6000000000008 /* Build configuration list for PBXNativeTarget "HomioMatter" */;
+			buildPhases = (
+				C1D2E3F4A5B6000000000004 /* Sources */,
+				C1D2E3F4A5B6000000000005 /* Frameworks */,
+				C1D2E3F4A5B6000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				C1D2E3F4A5B6000000000002 /* HomioMatterExtension */,
+				C1D2E3F4A5B6000000000003 /* HomioMatterCore */,
+			);
+			name = HomioMatter;
+			packageProductDependencies = (
+			);
+			productName = HomioMatter;
+			productReference = C1D2E3F4A5B6000000000001 /* HomioMatter.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -159,6 +229,9 @@
 						CreatedOnToolsVersion = 16.0;
 					};
 					B1C2D3E4F5A6000000000006 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					C1D2E3F4A5B6000000000007 = {
 						CreatedOnToolsVersion = 16.0;
 					};
 				};
@@ -183,6 +256,7 @@
 			targets = (
 				A1B2C3D4E5F6000000000006 /* Homio */,
 				B1C2D3E4F5A6000000000006 /* HomioWatch */,
+				C1D2E3F4A5B6000000000007 /* HomioMatter */,
 			);
 		};
 /* End PBXProject section */
@@ -196,6 +270,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		B1C2D3E4F5A6000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1D2E3F4A5B6000000000006 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -219,6 +300,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		C1D2E3F4A5B6000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -227,6 +315,12 @@
 			platformFilter = ios;
 			target = B1C2D3E4F5A6000000000006 /* HomioWatch */;
 			targetProxy = B1C2D3E4F5A600000000000D /* PBXContainerItemProxy */;
+		};
+		C1D2E3F4A5B600000000000E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilter = ios;
+			target = C1D2E3F4A5B6000000000007 /* HomioMatter */;
+			targetProxy = C1D2E3F4A5B600000000000D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -436,6 +530,68 @@
 			};
 			name = Release;
 		};
+		C1D2E3F4A5B6000000000009 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HomioMatterExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EU3UY476T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "HomioMatterExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Homio;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = nl.lrvdlinden.homio.matter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		C1D2E3F4A5B600000000000A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				CODE_SIGN_ENTITLEMENTS = HomioMatterExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = EU3UY476T6;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "HomioMatterExtension-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Homio;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = nl.lrvdlinden.homio.matter;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -462,6 +618,15 @@
 			buildConfigurations = (
 				B1C2D3E4F5A6000000000008 /* Debug */,
 				B1C2D3E4F5A6000000000009 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C1D2E3F4A5B6000000000008 /* Build configuration list for PBXNativeTarget "HomioMatter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C1D2E3F4A5B6000000000009 /* Debug */,
+				C1D2E3F4A5B600000000000A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

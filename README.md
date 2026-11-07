@@ -51,6 +51,27 @@ Apparaten, kamers, sferen en automatiseringen synct Apple Woning zelf. Daarboven
 
 Per apparaat: de eerste keer 4 uur na het eerste gebruik, daarna hooguit één keer per week, alleen ±4 seconden na het openen, nooit tijdens splash, inloggen of de weergavemodus, en pas als er minstens één apparaat in de woning staat. Apple laat de vraag daarnaast hooguit 3 keer per jaar zien.
 
+## Matter (eigen netwerk, naast HomeKit)
+
+Homio heeft een eigen Matter-netwerk (fabric) naast Apple Woning.
+
+- **Nieuw apparaat**: Thuis › + › "Matter-apparaat toevoegen" › "Nieuw apparaat koppelen". iOS toont het koppelscherm van Apple (QR, Bluetooth, wifi/Thread) en geeft het apparaat aan de extensie `HomioMatter`, die het in Homio's netwerk zet.
+- **Al in een andere app** (Google Home, Alexa, SmartThings, Homey, app van de fabrikant): zet daar de koppelmodus aan en vul de code in Homio in.
+- **Geen dubbelingen**: zit een apparaat ook in Apple Woning (zelfde serienummer, of zelfde merk, model en naam), dan toont Homio alleen de HomeKit-versie.
+- **Alle Matter-types**: lampen (dimmen, kleur, kleurtemperatuur), stekkers en inbouwschakelaars, sloten, raambekleding, thermostaten, airco/verwarming, ventilatoren, luchtreinigers, kranen/beregening, robotstofzuigers, huishoudapparaten, energie (laadpaal, zonnepanelen, thuisbatterij), speakers/tv's en alle sensoren (temperatuur, vocht, licht, aanwezigheid, contact, rook/CO, lekkage, luchtkwaliteit). Bridges worden per apparaat getoond.
+- **Delen**: in Beheren maakt "Koppelcode voor een andere app" een code van 15 minuten (multi-admin).
+- **Sleutels**: root-sleutel, IPK, fabric-ID en root-certificaat staan in de iCloud-sleutelhanger (gedeelde groep `EU3UY476T6.nl.lrvdlinden.homio.shared`), zodat al je Apple-apparaten hetzelfde netwerk bedienen. De apparatenlijst gaat via iCloud-sync.
+
+Grenzen:
+- Matter-apparaten van Homio werken zolang er een Apple-apparaat met Homio in je netwerk is; er is geen hub die ze 's nachts aanstuurt. Flows (HomeKit-automatiseringen) werken daarom alleen met apparaten in Apple Woning.
+- Thread-apparaten hebben een Thread-router nodig (HomePod mini, Apple TV 4K of andere).
+- Controller-Vendor-ID is de Matter-testwaarde `0xFFF1`. Vraag voor de App Store een eigen Vendor ID aan bij de CSA en zet die in `MatterShared.vendorID`.
+- Nodig in het developer-account: App Group `group.nl.lrvdlinden.homio` (app en extensie), Keychain Sharing (beide). De Mac-versie koppelt alleen met een code (het koppelscherm van Apple bestaat niet op de Mac).
+
+## Iconen
+
+Bij Beheren › Icoon kies je per apparaat een icoon: Homio's eigen set (36 lijn-iconen) of een van de 1790 merk- en apparaat-iconen uit [custom-brand-icons](https://github.com/elax46/custom-brand-icons) (MIT, door elax46). Keuzes gaan mee via iCloud-sync.
+
 ## Goed om te weten
 
 - **Geschiedenis:** HomeKit bewaart geen meetgeschiedenis. Homio meet elke 5 minuten zolang de app open is en bewaart 7 dagen. De tijdlijn toont wat Homio ziet gebeuren.

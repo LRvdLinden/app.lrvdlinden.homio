@@ -228,6 +228,13 @@ final class HistoryStore: ObservableObject {
         scheduleSave()
     }
 
+    /// Logregel voor een Matter-apparaat (via Homio's eigen netwerk).
+    func logMatter(name: String, room: String, text: String) {
+        log.insert(LogEntry(date: Date(), title: name, detail: text, room: room, symbol: "dot.radiowaves.left.and.right"), at: 0)
+        if log.count > 500 { log.removeLast(log.count - 500) }
+        scheduleSave()
+    }
+
     func clearAll() {
         metrics = [:]
         series = [:]

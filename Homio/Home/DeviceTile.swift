@@ -1,13 +1,28 @@
 import HomeKit
 import SwiftUI
 
-/// Eigen lijn-icoon van een apparaat (vector uit de asset catalog).
+/// Icoon van een apparaat: het gekozen icoon (eigen of merk), anders het standaardicoon
+/// dat met de stand meewisselt.
 struct DeviceIcon: View {
-    let device: Device
+    let key: String
+    let fallback: String
     var size: CGFloat = 28
+    @ObservedObject private var store = DeviceIconStore.shared
+
+    init(device: Device, size: CGFloat = 28) {
+        key = device.id.uuidString
+        fallback = device.iconName
+        self.size = size
+    }
+
+    init(key: String, fallback: String, size: CGFloat = 28) {
+        self.key = key
+        self.fallback = fallback
+        self.size = size
+    }
 
     var body: some View {
-        Image(device.iconName)
+        Image(store.icon(for: key) ?? fallback)
             .renderingMode(.template)
             .resizable()
             .scaledToFit()
@@ -17,24 +32,41 @@ struct DeviceIcon: View {
     }
 }
 
+/// Wat een tegel toont, los van waar het apparaat vandaan komt (HomeKit of Matter).
+struct TileModel {
+    var iconKey: String
+    var iconName: String
+    var name: String
+    var kind: DeviceKind
+    var isOn: Bool
+    var isToggleable: Bool
+    var isReachable: Bool
+    var lowBattery: Bool
+    var indicator: String?
+    var accessibilityValue: String
+    /// Klein "M"-label voor apparaten die via Homio's eigen Matter-netwerk lopen.
+    var viaMatter = false
+
+    /// Zonder snelle actie (sensoren) staat een tegel altijd "aan", net als in Homey.
+    var lit: Bool { isToggleable ? isOn : true }
+    var alarm: Bool { kind.isAlarm && isOn }
+}
+
 /// Apparaattegel zoals in de Homey-app: vierkant, icoon linksboven (1/3 van de breedte),
 /// waarde rechtsboven, naam linksonder. Tik = snelle actie (zacht tikje), lang drukken =
 /// apparaat openen (stevige tik), contextmenu met extra snelle acties.
 /// Uit = component_off met haarlijn, aan = component_on met lichte schaduw.
-struct DeviceTile: View {
-    let device: Device
+struct TileFace<Menu: View>: View {
+    let model: TileModel
     var minHeight: CGFloat = 0
     var fillsHeight = false
+    let onTap: () -> Void
+    let onOpen: () -> Void
+    @ViewBuilder let menu: () -> Menu
 
-    @EnvironmentObject private var home: HomeStore
-    @State private var showDetail = false
     @State private var pressing = false
     @State private var tapped = 0
     @State private var opened = 0
-
-    /// Zonder snelle actie (sensoren) staat een tegel altijd "aan", net als in Homey.
-    private var lit: Bool { device.isToggleable ? device.isOn : true }
-    private var alarm: Bool { device.kind.isAlarm && device.isOn }
 
     var body: some View {
         GeometryReader { geo in
@@ -47,94 +79,137 @@ struct DeviceTile: View {
         .frame(minHeight: minHeight > 0 ? minHeight : nil)
         .background {
             RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                .fill(lit ? Theme.tileOn : Theme.tileOff)
+                .fill(model.lit ? Theme.tileOn : Theme.tileOff)
                 .overlay {
-                    if !lit {
+                    if !model.lit {
                         RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
                             .strokeBorder(Theme.tileBorder, lineWidth: 1 / UIScreen.main.scale)
                     }
                 }
-                .shadow(color: .black.opacity(lit ? 0.12 : 0), radius: 3, y: 2)
+                .shadow(color: .black.opacity(model.lit ? 0.12 : 0), radius: 3, y: 2)
         }
-        .opacity(device.isReachable ? 1 : 0.55)
+        .opacity(model.isReachable ? 1 : 0.55)
         .scaleEffect(pressing ? 0.96 : 1)
         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressing)
-        .animation(.easeInOut(duration: 0.2), value: lit)
+        .animation(.easeInOut(duration: 0.2), value: model.lit)
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
-        .onTapGesture { quickAction() }
+        .onTapGesture {
+            if model.isToggleable && model.isReachable {
+                tapped += 1
+                onTap()
+            } else {
+                opened += 1
+                onOpen()
+            }
+        }
         .onLongPressGesture(minimumDuration: 0.4, perform: {
             opened += 1
-            showDetail = true
+            onOpen()
         }, onPressingChanged: { isPressing in
             pressing = isPressing
         })
-        .contextMenu { QuickActionsMenu(device: device, showDetail: $showDetail) }
+        .contextMenu { menu() }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: tapped)
         .sensoryFeedback(.impact(weight: .medium), trigger: opened)
-        .sheet(isPresented: $showDetail) {
-            DeviceDetailSheet(deviceID: device.id)
-        }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(device.name), \(device.stateText)")
+        .accessibilityLabel("\(model.name), \(model.accessibilityValue)")
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(device.isToggleable ? "Tik om te schakelen, houd vast voor meer" : "Tik voor details")
+        .accessibilityHint(model.isToggleable ? "Tik om te schakelen, houd vast voor meer" : "Tik voor details")
     }
 
     private func content(unit: CGFloat, side: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 4) {
-                DeviceIcon(device: device, size: 36 * unit)
+                DeviceIcon(key: model.iconKey, fallback: model.iconName, size: 36 * unit)
                     .foregroundStyle(iconColor)
-                    .opacity(lit ? 1 : 0.7)
+                    .opacity(model.lit ? 1 : 0.7)
                     .symbolEffect(.bounce, value: tapped)
                 Spacer(minLength: 0)
                 indicator(unit: unit, side: side)
             }
             Spacer(minLength: 4)
-            Text(device.name)
-                .font(.system(size: (14 * unit).rounded(), weight: .medium))
-                .lineSpacing(3 * unit)
-                .foregroundStyle(lit ? Theme.text : Theme.textMedium)
-                .lineLimit(fillsHeight && side > 160 ? 3 : 2)
-                .multilineTextAlignment(.leading)
-                .minimumScaleFactor(0.85)
+            HStack(alignment: .lastTextBaseline, spacing: 4) {
+                Text(model.name)
+                    .font(.system(size: (14 * unit).rounded(), weight: .medium))
+                    .lineSpacing(3 * unit)
+                    .foregroundStyle(model.lit ? Theme.text : Theme.textMedium)
+                    .lineLimit(fillsHeight && side > 160 ? 3 : 2)
+                    .multilineTextAlignment(.leading)
+                    .minimumScaleFactor(0.85)
+                if model.viaMatter {
+                    Spacer(minLength: 0)
+                    Text(verbatim: "M")
+                        .font(.system(size: 9 * unit, weight: .heavy))
+                        .foregroundStyle(Theme.textLight)
+                        .padding(.horizontal, 3)
+                        .overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.textLight.opacity(0.6), lineWidth: 0.75))
+                        .accessibilityHidden(true)
+                }
+            }
         }
         .padding(Theme.tilePadding * min(unit, 1.2))
     }
 
     private var iconColor: Color {
-        if !device.isReachable { return Theme.textLight }
-        if lit && device.kind == .light { return Theme.yellow }
-        return lit ? Theme.text : Theme.textLight
+        if !model.isReachable { return Theme.textLight }
+        if model.lit && model.kind == .light { return Theme.yellow }
+        return model.lit ? Theme.text : Theme.textLight
     }
 
-    /// Rechtsboven: alarm, batterij, geen reactie of de belangrijkste waarde.
+    /// Rechtsboven: alarm, geen reactie, batterij of de belangrijkste waarde.
     @ViewBuilder
     private func indicator(unit: CGFloat, side: CGFloat) -> some View {
-        if alarm {
+        if model.alarm {
             Text(verbatim: "!")
                 .font(.system(size: 15 * unit, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: side * 0.24, height: side * 0.24)
                 .background(Circle().fill(Theme.red))
-                .symbolEffect(.pulse)
-        } else if !device.isReachable {
+        } else if !model.isReachable {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 14 * unit, weight: .semibold))
                 .foregroundStyle(Theme.orange)
-        } else if device.lowBattery {
+        } else if model.lowBattery {
             Image(systemName: "battery.25percent")
                 .font(.system(size: 15 * unit, weight: .semibold))
                 .foregroundStyle(Theme.red)
-        } else if let value = indicatorValue {
+        } else if let value = model.indicator {
             Text(value)
                 .font(.system(size: (13 * unit).rounded(), weight: .medium))
-                .foregroundStyle(lit ? Theme.textMedium : Theme.textLight)
+                .foregroundStyle(model.lit ? Theme.textMedium : Theme.textLight)
                 .multilineTextAlignment(.trailing)
                 .lineLimit(3)
                 .contentTransition(.numericText())
                 .frame(maxWidth: side * 0.56, alignment: .topTrailing)
         }
+    }
+}
+
+/// Tegel voor een HomeKit-apparaat.
+struct DeviceTile: View {
+    let device: Device
+    var minHeight: CGFloat = 0
+    var fillsHeight = false
+
+    @EnvironmentObject private var home: HomeStore
+    @State private var showDetail = false
+
+    var body: some View {
+        TileFace(model: model, minHeight: minHeight, fillsHeight: fillsHeight,
+                 onTap: { home.toggle(device) },
+                 onOpen: { showDetail = true }) {
+            QuickActionsMenu(device: device, showDetail: $showDetail)
+        }
+        .sheet(isPresented: $showDetail) {
+            DeviceDetailSheet(deviceID: device.id)
+        }
+    }
+
+    private var model: TileModel {
+        TileModel(iconKey: device.id.uuidString, iconName: device.iconName, name: device.name,
+                  kind: device.kind, isOn: device.isOn, isToggleable: device.isToggleable,
+                  isReachable: device.isReachable, lowBattery: device.lowBattery,
+                  indicator: indicatorValue, accessibilityValue: device.stateText)
     }
 
     private var indicatorValue: String? {
@@ -160,16 +235,6 @@ struct DeviceTile: View {
             return device.isOn ? device.stateText : nil
         default:
             return nil
-        }
-    }
-
-    private func quickAction() {
-        if device.isToggleable && device.isReachable {
-            home.toggle(device)
-            tapped += 1
-        } else {
-            opened += 1
-            showDetail = true
         }
     }
 }

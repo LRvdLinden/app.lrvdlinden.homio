@@ -5,6 +5,8 @@ enum DeviceKind: String {
     case light, outlet, switchKind, thermostat, lock, blinds, fan, garage
     case window, door, airPurifier, heaterCooler, humidifier, valve, security
     case temperature, humidity, contact, motion, occupancy, smoke, carbonMonoxide, leak, lux, airQuality
+    /// Alleen via Matter: speaker, tv, robotstofzuiger, huishoudapparaat, energie, overige sensor.
+    case speaker, tv, vacuum, appliance, energy, sensor
 
     init?(serviceType: String) {
         switch serviceType {
@@ -39,7 +41,7 @@ enum DeviceKind: String {
 
     var isSensor: Bool {
         switch self {
-        case .temperature, .humidity, .contact, .motion, .occupancy, .smoke, .carbonMonoxide, .leak, .lux, .airQuality:
+        case .temperature, .humidity, .contact, .motion, .occupancy, .smoke, .carbonMonoxide, .leak, .lux, .airQuality, .sensor:
             return true
         default:
             return false
@@ -67,8 +69,51 @@ enum DeviceKind: String {
         case .garage: return .indigo
         case .smoke, .carbonMonoxide, .leak: return Theme.red
         case .motion, .occupancy, .contact: return Theme.accent
-        case .temperature, .humidity, .lux, .airQuality: return Theme.textLight
+        case .temperature, .humidity, .lux, .airQuality, .sensor: return Theme.textLight
+        case .speaker: return Theme.purple
+        case .tv: return Theme.accent
+        case .vacuum, .appliance: return Theme.green
+        case .energy: return Theme.yellow
         }
+    }
+
+    /// Standaardicoon (asset) voor dit soort apparaat, wisselend met de stand.
+    func iconName(isOn: Bool) -> String {
+        let base: String
+        switch self {
+        case .light: base = isOn ? "light-on" : "light"
+        case .outlet: base = "plug"
+        case .switchKind: base = "switch"
+        case .thermostat: base = "thermostat"
+        case .lock: base = isOn ? "lock-closed" : "lock-open"
+        case .blinds: base = isOn ? "blinds-open" : "blinds-closed"
+        case .fan: base = "fan"
+        case .garage: base = isOn ? "garage-open" : "garage-closed"
+        case .window: base = "window"
+        case .door: base = isOn ? "door-open" : "door-closed"
+        case .airPurifier: base = "purifier"
+        case .heaterCooler: base = "heater"
+        case .humidifier: base = "humidifier"
+        case .valve: base = "valve"
+        case .security: base = "security"
+        case .temperature: base = "thermometer"
+        case .humidity: base = "humidity"
+        case .contact: base = isOn ? "door-open" : "door-closed"
+        case .motion: base = "motion"
+        case .occupancy: base = "occupancy"
+        case .smoke: base = "smoke"
+        case .carbonMonoxide: base = "co"
+        case .leak: base = "leak"
+        case .lux: base = "lux"
+        case .airQuality: base = "air"
+        case .speaker: base = "speaker"
+        case .tv: base = "tv"
+        case .vacuum: base = "vacuum"
+        case .appliance: base = "appliance"
+        case .energy: base = "energy"
+        case .sensor: base = "sensor"
+        }
+        return "dev-" + base
     }
 }
 
@@ -135,7 +180,7 @@ struct Device: Identifiable {
             return flag(HMCharacteristicTypeCarbonMonoxideDetected) || flag(HMCharacteristicTypeCarbonDioxideDetected)
         case .leak:
             return flag(HMCharacteristicTypeLeakDetected)
-        case .temperature, .humidity, .lux, .airQuality:
+        case .temperature, .humidity, .lux, .airQuality, .speaker, .tv, .vacuum, .appliance, .energy, .sensor:
             return false
         }
     }
@@ -150,37 +195,7 @@ struct Device: Identifiable {
     }
 
     /// Naam van het eigen vector-icoon in de asset catalog.
-    var iconName: String {
-        let base: String
-        switch kind {
-        case .light: base = isOn ? "light-on" : "light"
-        case .outlet: base = "plug"
-        case .switchKind: base = "switch"
-        case .thermostat: base = "thermostat"
-        case .lock: base = isOn ? "lock-closed" : "lock-open"
-        case .blinds: base = isOn ? "blinds-open" : "blinds-closed"
-        case .fan: base = "fan"
-        case .garage: base = isOn ? "garage-open" : "garage-closed"
-        case .window: base = "window"
-        case .door: base = isOn ? "door-open" : "door-closed"
-        case .airPurifier: base = "purifier"
-        case .heaterCooler: base = "heater"
-        case .humidifier: base = "humidifier"
-        case .valve: base = "valve"
-        case .security: base = "security"
-        case .temperature: base = "thermometer"
-        case .humidity: base = "humidity"
-        case .contact: base = isOn ? "door-open" : "door-closed"
-        case .motion: base = "motion"
-        case .occupancy: base = "occupancy"
-        case .smoke: base = "smoke"
-        case .carbonMonoxide: base = "co"
-        case .leak: base = "leak"
-        case .lux: base = "lux"
-        case .airQuality: base = "air"
-        }
-        return "dev-" + base
-    }
+    var iconName: String { kind.iconName(isOn: isOn) }
 
     var isToggleable: Bool {
         switch kind {
@@ -217,6 +232,12 @@ struct Device: Identifiable {
         case .leak: return "drop.triangle.fill"
         case .lux: return "sun.max.fill"
         case .airQuality: return "aqi.medium"
+        case .speaker: return "hifispeaker.fill"
+        case .tv: return "tv.fill"
+        case .vacuum: return "circle.circle.fill"
+        case .appliance: return "washer.fill"
+        case .energy: return "bolt.fill"
+        case .sensor: return "sensor.fill"
         }
     }
 
@@ -293,6 +314,8 @@ struct Device: Identifiable {
             case 5: return "Slecht"
             default: return "Onbekend"
             }
+        case .speaker, .tv, .vacuum, .appliance, .energy, .sensor:
+            return isReachable ? "Bereikbaar" : "Geen reactie"
         }
     }
 }
