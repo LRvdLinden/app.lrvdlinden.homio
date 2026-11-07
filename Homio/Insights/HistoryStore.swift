@@ -201,6 +201,14 @@ final class HistoryStore: ObservableObject {
             guard number != 0 else { return }
             text = "Beweging gezien"
             symbol = "figure.walk.motion"
+        case HMCharacteristicTypeSmokeDetected, HMCharacteristicTypeCarbonMonoxideDetected,
+             HMCharacteristicTypeCarbonDioxideDetected, HMCharacteristicTypeLeakDetected:
+            text = number != 0 ? "Alarm!" : "Weer veilig"
+            symbol = number != 0 ? "exclamationmark.octagon.fill" : "checkmark.shield"
+        case HMCharacteristicTypeOccupancyDetected:
+            guard number != 0 else { return }
+            text = "Aanwezigheid gezien"
+            symbol = "person.fill"
         case HMCharacteristicTypeCurrentDoorState:
             guard number == 0 || number == 1 else { return }
             text = number == 0 ? "Geopend" : "Gesloten"

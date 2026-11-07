@@ -9,6 +9,11 @@ enum Theme {
     static let card = Color(light: 0xFFFFFF, dark: 0x1F2029)
     static let cardRaised = Color(light: 0xEAEAF1, dark: 0x2B2C36)
     static let pill = Color(light: 0xEAEAF1, dark: 0x2B2C36)
+    /// Apparaattegel uit: grijzig vlak (Homey mono-050). Aan: licht vlak dat oplicht.
+    static let tileOff = Color(light: 0xEAEAF1, dark: 0x1F2029)
+    static let tileOn = Color(light: 0xFFFFFF, dark: 0xE4E4E7)
+    static let tileOnText = Color(light: 0x1C1C1C, dark: 0x1C1C1C)
+    static let tileOnTextLight = Color(light: 0x7A7A7F, dark: 0x5C5C66)
     static let line = Color(light: 0xDADAE2, dark: 0x2B2C36)
     static let lineLight = Color(light: 0xEAEAF1, dark: 0x1F2029)
     static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)          // mono-900

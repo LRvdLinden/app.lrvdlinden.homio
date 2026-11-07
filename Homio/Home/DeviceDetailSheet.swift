@@ -58,8 +58,11 @@ private struct DeviceControls: View {
     var body: some View {
         VStack(spacing: 28) {
             VStack(spacing: 6) {
-                Image(systemName: device.symbol)
-                    .font(.system(size: 44))
+                Image(device.iconName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 52, height: 52)
                     .foregroundStyle(device.isOn ? device.tint : Color.primary.opacity(0.7))
                 Text(device.stateText).font(.title2.weight(.semibold))
                 Text(device.roomName).foregroundStyle(Theme.textLight)
@@ -69,7 +72,7 @@ private struct DeviceControls: View {
             switch device.kind {
             case .light:
                 LightControls(device: device)
-            case .blinds:
+            case .blinds, .window, .door:
                 PercentSlider(device: device,
                               type: HMCharacteristicTypeTargetPosition,
                               current: device.position ?? 0)
@@ -84,9 +87,9 @@ private struct DeviceControls: View {
                 }
             case .thermostat:
                 ThermostatControls(device: device)
-            case .lock, .outlet, .switchKind, .garage:
+            case .lock, .outlet, .switchKind, .garage, .airPurifier, .heaterCooler, .humidifier, .valve:
                 PowerButton(device: device)
-            case .temperature, .humidity, .contact, .motion:
+            case .security, .temperature, .humidity, .contact, .motion, .occupancy, .smoke, .carbonMonoxide, .leak, .lux, .airQuality:
                 Text(device.stateText)
                     .font(.system(size: 72, weight: .thin, design: .rounded))
             }

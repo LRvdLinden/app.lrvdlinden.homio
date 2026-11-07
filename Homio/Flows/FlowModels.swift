@@ -154,7 +154,7 @@ struct ActionStep: Identifiable, Codable, Hashable {
         var step = ActionStep(deviceID: device.id)
         switch device.kind {
         case .lock: step.mode = .lock; step.value = 1
-        case .blinds: step.mode = .position; step.value = 100
+        case .blinds, .window, .door: step.mode = .position; step.value = 100
         case .thermostat: step.mode = .temperature; step.value = device.targetTemperature ?? 20
         case .garage: step.mode = .door; step.value = 0
         default: step.mode = .power; step.value = 1

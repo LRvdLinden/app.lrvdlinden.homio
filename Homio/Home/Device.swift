@@ -3,7 +3,8 @@ import SwiftUI
 
 enum DeviceKind: String {
     case light, outlet, switchKind, thermostat, lock, blinds, fan, garage
-    case temperature, humidity, contact, motion
+    case window, door, airPurifier, heaterCooler, humidifier, valve, security
+    case temperature, humidity, contact, motion, occupancy, smoke, carbonMonoxide, leak, lux, airQuality
 
     init?(serviceType: String) {
         switch serviceType {
@@ -15,31 +16,58 @@ enum DeviceKind: String {
         case HMServiceTypeWindowCovering: self = .blinds
         case HMServiceTypeFan: self = .fan
         case HMServiceTypeGarageDoorOpener: self = .garage
+        case HMServiceTypeWindow: self = .window
+        case HMServiceTypeDoor: self = .door
+        case HMServiceTypeAirPurifier: self = .airPurifier
+        case HMServiceTypeHeaterCooler: self = .heaterCooler
+        case HMServiceTypeHumidifierDehumidifier: self = .humidifier
+        case HMServiceTypeValve, HMServiceTypeFaucet, HMServiceTypeIrrigationSystem: self = .valve
+        case HMServiceTypeSecuritySystem: self = .security
         case HMServiceTypeTemperatureSensor: self = .temperature
         case HMServiceTypeHumiditySensor: self = .humidity
         case HMServiceTypeContactSensor: self = .contact
         case HMServiceTypeMotionSensor: self = .motion
+        case HMServiceTypeOccupancySensor: self = .occupancy
+        case HMServiceTypeSmokeSensor: self = .smoke
+        case HMServiceTypeCarbonMonoxideSensor, HMServiceTypeCarbonDioxideSensor: self = .carbonMonoxide
+        case HMServiceTypeLeakSensor: self = .leak
+        case HMServiceTypeLightSensor: self = .lux
+        case HMServiceTypeAirQualitySensor: self = .airQuality
         default: return nil
         }
     }
 
     var isSensor: Bool {
         switch self {
-        case .temperature, .humidity, .contact, .motion: return true
-        default: return false
+        case .temperature, .humidity, .contact, .motion, .occupancy, .smoke, .carbonMonoxide, .leak, .lux, .airQuality:
+            return true
+        default:
+            return false
         }
     }
 
+    /// Sensoren die alarm slaan (rode tegel).
+    var isAlarm: Bool { [.smoke, .carbonMonoxide, .leak].contains(self) }
+
+    /// Apparaten die via "Active" aan/uit gaan.
+    var usesActive: Bool { [.airPurifier, .heaterCooler, .humidifier, .valve].contains(self) }
+
+    /// Apparaten met een positie (0–100).
+    var usesPosition: Bool { [.blinds, .window, .door].contains(self) }
+
+    /// Accentkleur in de stijl van Homey.
     var tint: Color {
         switch self {
-        case .light: return Theme.amber
-        case .outlet, .switchKind: return .green
-        case .thermostat: return .orange
-        case .lock: return .blue
-        case .blinds: return .teal
-        case .fan: return .cyan
+        case .light: return Color(red: 1.0, green: 0.71, blue: 0.0)
+        case .outlet, .switchKind, .valve: return Theme.green
+        case .thermostat, .heaterCooler: return Theme.orange
+        case .lock, .security: return Theme.accent
+        case .blinds, .window, .door: return .teal
+        case .fan, .airPurifier, .humidifier: return .cyan
         case .garage: return .indigo
-        case .temperature, .humidity, .contact, .motion: return .white
+        case .smoke, .carbonMonoxide, .leak: return Theme.red
+        case .motion, .occupancy, .contact: return Theme.accent
+        case .temperature, .humidity, .lux, .airQuality: return Theme.textLight
         }
     }
 }
@@ -89,18 +117,75 @@ struct Device: Identifiable {
             return number(HMCharacteristicTypeCurrentDoorState) == 0
         case .thermostat:
             return (number(HMCharacteristicTypeTargetHeatingCooling) ?? 0) != 0
+        case .window, .door:
+            return (position ?? 0) > 0
+        case .airPurifier, .heaterCooler, .humidifier, .valve:
+            return flag(HMCharacteristicTypeActive)
+        case .security:
+            return (number(HMCharacteristicTypeCurrentSecuritySystemState) ?? 3) != 3
         case .contact:
             return number(HMCharacteristicTypeContactState) == 1
         case .motion:
             return flag(HMCharacteristicTypeMotionDetected)
-        case .temperature, .humidity:
+        case .occupancy:
+            return flag(HMCharacteristicTypeOccupancyDetected)
+        case .smoke:
+            return flag(HMCharacteristicTypeSmokeDetected)
+        case .carbonMonoxide:
+            return flag(HMCharacteristicTypeCarbonMonoxideDetected) || flag(HMCharacteristicTypeCarbonDioxideDetected)
+        case .leak:
+            return flag(HMCharacteristicTypeLeakDetected)
+        case .temperature, .humidity, .lux, .airQuality:
             return false
         }
     }
 
+    /// Batterij bijna leeg (op welke dienst van het accessoire dan ook).
+    var lowBattery: Bool {
+        accessory.services.contains { service in
+            service.characteristics.contains {
+                $0.characteristicType == HMCharacteristicTypeStatusLowBattery && (($0.value as? NSNumber)?.intValue ?? 0) == 1
+            }
+        }
+    }
+
+    /// Naam van het eigen vector-icoon in de asset catalog.
+    var iconName: String {
+        let base: String
+        switch kind {
+        case .light: base = isOn ? "light-on" : "light"
+        case .outlet: base = "plug"
+        case .switchKind: base = "switch"
+        case .thermostat: base = "thermostat"
+        case .lock: base = isOn ? "lock-closed" : "lock-open"
+        case .blinds: base = isOn ? "blinds-open" : "blinds-closed"
+        case .fan: base = "fan"
+        case .garage: base = isOn ? "garage-open" : "garage-closed"
+        case .window: base = "window"
+        case .door: base = isOn ? "door-open" : "door-closed"
+        case .airPurifier: base = "purifier"
+        case .heaterCooler: base = "heater"
+        case .humidifier: base = "humidifier"
+        case .valve: base = "valve"
+        case .security: base = "security"
+        case .temperature: base = "thermometer"
+        case .humidity: base = "humidity"
+        case .contact: base = isOn ? "door-open" : "door-closed"
+        case .motion: base = "motion"
+        case .occupancy: base = "occupancy"
+        case .smoke: base = "smoke"
+        case .carbonMonoxide: base = "co"
+        case .leak: base = "leak"
+        case .lux: base = "lux"
+        case .airQuality: base = "air"
+        }
+        return "dev-" + base
+    }
+
     var isToggleable: Bool {
         switch kind {
-        case .light, .outlet, .switchKind, .fan, .lock, .blinds, .garage: return true
+        case .light, .outlet, .switchKind, .fan, .lock, .blinds, .garage,
+             .window, .door, .airPurifier, .heaterCooler, .humidifier, .valve: return true
         default: return false
         }
     }
@@ -119,6 +204,19 @@ struct Device: Identifiable {
         case .humidity: return "humidity.fill"
         case .contact: return isOn ? "door.left.hand.open" : "door.left.hand.closed"
         case .motion: return "figure.walk.motion"
+        case .window: return "window.vertical.open"
+        case .door: return isOn ? "door.left.hand.open" : "door.left.hand.closed"
+        case .airPurifier: return "air.purifier.fill"
+        case .heaterCooler: return "heater.vertical.fill"
+        case .humidifier: return "humidifier.fill"
+        case .valve: return "spigot.fill"
+        case .security: return "checkmark.shield.fill"
+        case .occupancy: return "person.fill"
+        case .smoke: return "smoke.fill"
+        case .carbonMonoxide: return "carbon.monoxide.cloud.fill"
+        case .leak: return "drop.triangle.fill"
+        case .lux: return "sun.max.fill"
+        case .airQuality: return "aqi.medium"
         }
     }
 
@@ -142,7 +240,7 @@ struct Device: Identifiable {
             case 2: return "Klemt"
             default: return "Onbekend"
             }
-        case .blinds:
+        case .blinds, .window, .door:
             let p = Int(position ?? 0)
             if p <= 0 { return "Gesloten" }
             if p >= 100 { return "Open" }
@@ -163,6 +261,38 @@ struct Device: Identifiable {
             return isOn ? "Open" : "Dicht"
         case .motion:
             return isOn ? "Beweging" : "Geen beweging"
+        case .airPurifier, .humidifier, .valve:
+            return isOn ? "Aan" : "Uit"
+        case .heaterCooler:
+            let current = currentTemperature.map { "\($0.oneDecimal)°" } ?? "–"
+            return isOn ? "Aan · \(current)" : "Uit · \(current)"
+        case .security:
+            switch Int(number(HMCharacteristicTypeCurrentSecuritySystemState) ?? 3) {
+            case 0: return "Thuis"
+            case 1: return "Afwezig"
+            case 2: return "Nacht"
+            case 4: return "Alarm!"
+            default: return "Uitgeschakeld"
+            }
+        case .occupancy:
+            return isOn ? "Aanwezig" : "Niemand"
+        case .smoke:
+            return isOn ? "Rook!" : "Geen rook"
+        case .carbonMonoxide:
+            return isOn ? "Gas gemeten!" : "Veilig"
+        case .leak:
+            return isOn ? "Lekkage!" : "Droog"
+        case .lux:
+            return number(HMCharacteristicTypeCurrentLightLevel).map { "\(Int($0)) lux" } ?? "–"
+        case .airQuality:
+            switch Int(number(HMCharacteristicTypeAirQuality) ?? 0) {
+            case 1: return "Uitstekend"
+            case 2: return "Goed"
+            case 3: return "Redelijk"
+            case 4: return "Matig"
+            case 5: return "Slecht"
+            default: return "Onbekend"
+            }
         }
     }
 }

@@ -220,7 +220,7 @@ struct HomeTab: View {
     // MARK: Inhoud per zone
 
     private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: compact ? 150 : 170), spacing: 12)]
+        [GridItem(.adaptive(minimum: compact ? 104 : 150), spacing: compact ? 10 : 12)]
     }
 
     @ViewBuilder

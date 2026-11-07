@@ -183,8 +183,10 @@ final class HomeStore: NSObject, ObservableObject {
             }
         case .lock:
             write(d.characteristic(HMCharacteristicTypeTargetLockMechanismState), d.isOn ? 0 : 1)
-        case .blinds:
+        case .blinds, .window, .door:
             write(d.characteristic(HMCharacteristicTypeTargetPosition), d.isOn ? 0 : 100)
+        case .airPurifier, .heaterCooler, .humidifier, .valve:
+            write(d.characteristic(HMCharacteristicTypeActive), d.isOn ? 0 : 1)
         case .garage:
             write(d.characteristic(HMCharacteristicTypeTargetDoorState), d.isOn ? 1 : 0)
         case .thermostat:

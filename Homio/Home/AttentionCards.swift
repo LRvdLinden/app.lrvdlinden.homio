@@ -20,6 +20,14 @@ enum AttentionBuilder {
         let hour = Calendar.current.component(.hour, from: now)
         let isNight = hour >= 23 || hour < 6
 
+        for d in devices where d.kind.isAlarm && d.isOn {
+            items.append(AttentionItem(id: "alarm-\(d.id)", symbol: "exclamationmark.octagon.fill", color: Theme.red,
+                                       title: "\(d.name): \(d.stateText)", detail: d.roomName))
+        }
+        for d in devices where d.lowBattery {
+            items.append(AttentionItem(id: "battery-\(d.id)", symbol: "battery.25percent", color: Theme.orange,
+                                       title: "Batterij van \(d.name) bijna leeg", detail: d.roomName))
+        }
         for d in devices where d.kind == .contact && d.isOn {
             items.append(AttentionItem(id: "open-\(d.id)", symbol: "door.left.hand.open", color: .teal,
                                        title: "\(d.name) staat open", detail: d.roomName))

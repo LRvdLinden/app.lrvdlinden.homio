@@ -3,7 +3,7 @@ import SwiftUI
 /// Tegel voor een groep. Tik = alles aan/uit, lang drukken = details.
 struct GroupTile: View {
     let group: DeviceGroup
-    var minHeight: CGFloat = 132
+    var minHeight: CGFloat = 118
     var fillsHeight = false
 
     @EnvironmentObject private var home: HomeStore
@@ -13,40 +13,45 @@ struct GroupTile: View {
     var body: some View {
         let state = GroupState(group: group, home: home)
         let on = state.isOn
-        VStack(alignment: .leading, spacing: Theme.su * 1.5) {
+        VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
                 Image(systemName: group.symbol)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundStyle(on ? Color.white : Color.secondary)
-                    .frame(width: 44, height: 44)
-                    .background(Circle().fill(on ? AnyShapeStyle(Theme.orange.gradient) : AnyShapeStyle(Theme.pill)))
-                Spacer()
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(on ? Theme.orange : Theme.textLight)
+                    .frame(height: 30)
+                Spacer(minLength: 0)
                 Text("\(state.members.count)")
                     .font(.caption.weight(.bold))
-                    .foregroundStyle(Theme.textLight)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
-                    .background(Capsule().fill(Theme.pill))
+                    .foregroundStyle(on ? Theme.tileOnTextLight : Theme.textLight)
+                    .padding(.horizontal, 7)
+                    .padding(.vertical, 2)
+                    .background(Capsule().fill(on ? Color.black.opacity(0.06) : Theme.pill))
             }
-            Spacer(minLength: Theme.su)
-            Text(group.name).font(HomeyFont.bodyMedium).lineLimit(2)
-            Text(state.stateText)
-                .font(HomeyFont.small)
-                .foregroundStyle(on ? Theme.orange : Color.secondary)
-                .lineLimit(1)
+            Spacer(minLength: Theme.su * 3)
+            Text(group.name)
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(on ? Theme.tileOnText : Theme.text)
+                .lineLimit(2)
+            HStack(spacing: 6) {
+                Text(state.stateText)
+                    .font(.system(size: 13))
+                    .foregroundStyle(on ? Theme.tileOnTextLight : Theme.textLight)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                Image(systemName: "power")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(on ? Color.white : Theme.textLight)
+                    .frame(width: 24, height: 24)
+                    .background(Circle().fill(on ? Theme.orange : Theme.pill))
+            }
+            .padding(.top, 2)
         }
-        .foregroundStyle(.primary)
-        .padding(Theme.su * 4)
+        .padding(Theme.su * 3)
         .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
         .background {
             RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                .fill(Theme.card)
-                .overlay(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                    .fill(Theme.orange.opacity(on ? 0.12 : 0)))
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                .strokeBorder(on ? Theme.orange.opacity(0.5) : Theme.line, lineWidth: 1)
+                .fill(on ? Theme.tileOn : Theme.tileOff)
+                .shadow(color: .black.opacity(on ? 0.12 : 0), radius: 10, y: 4)
         }
         .scaleEffect(pressing ? 0.95 : 1)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pressing)
@@ -199,7 +204,7 @@ struct GroupEditorView: View {
                             }
                         } label: {
                             HStack(spacing: 12) {
-                                Image(systemName: device.symbol)
+                                DeviceIcon(device: device, size: 22)
                                     .foregroundStyle(device.tint)
                                     .frame(width: 26)
                                 VStack(alignment: .leading, spacing: 1) {

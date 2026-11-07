@@ -65,15 +65,15 @@ final class PushRelay: ObservableObject {
         lastWatched = watched
     }
 
-    /// Standaard: deuren, ramen, sloten en garagedeuren aan; beweging uit.
+    /// Standaard: deuren, ramen, sloten, garagedeuren en alarmsensoren aan; beweging uit.
     func applyDefaultsIfNeeded(_ devices: [Device]) {
         guard defaults.bool(forKey: "homio.push.needsDefaults"), !devices.isEmpty else { return }
         defaults.set(false, forKey: "homio.push.needsDefaults")
-        watched = Set(devices.filter { [.contact, .lock, .garage].contains($0.kind) }.map { $0.id.uuidString })
+        watched = Set(devices.filter { [.contact, .lock, .garage].contains($0.kind) || $0.kind.isAlarm }.map { $0.id.uuidString })
     }
 
     nonisolated static func canNotify(_ device: Device) -> Bool {
-        [.contact, .lock, .garage, .motion].contains(device.kind)
+        [.contact, .lock, .garage, .motion, .occupancy, .door, .window, .security].contains(device.kind) || device.kind.isAlarm
     }
 
     func isWatched(_ device: Device) -> Bool { watched.contains(device.id.uuidString) }
@@ -249,7 +249,7 @@ struct NotificationSettingsView: View {
                                 Text(device.roomName).font(.caption).foregroundStyle(.secondary)
                             }
                         } icon: {
-                            Image(systemName: device.symbol)
+                            DeviceIcon(device: device, size: 22)
                         }
                     }
                 }
