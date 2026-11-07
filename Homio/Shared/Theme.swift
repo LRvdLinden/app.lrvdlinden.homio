@@ -1,24 +1,95 @@
 import SwiftUI
 
+/// Homey-achtige huisstijl voor Homio: 4-punts raster, Homey-lettermaten
+/// (32/24/20/17/14), Homey-kleuren voor blauw/groen/oranje/rood, licht en donker.
 enum Theme {
-    static let background = Color(red: 0.043, green: 0.051, blue: 0.071)
+    // Homey-grijswaarden (mono): licht en donker. Pagina = mono-025, kaart/widget = mono-000 (licht)
+    // of mono-050 (donker), knoppen/pillen = mono-100, lijnen = mono-100.
+    static let background = Color(light: 0xF4F4FA, dark: 0x111218)
+    static let card = Color(light: 0xFFFFFF, dark: 0x1F2029)
+    static let cardRaised = Color(light: 0xEAEAF1, dark: 0x2B2C36)
+    static let pill = Color(light: 0xEAEAF1, dark: 0x2B2C36)
+    static let line = Color(light: 0xDADAE2, dark: 0x2B2C36)
+    static let lineLight = Color(light: 0xEAEAF1, dark: 0x1F2029)
+    static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)          // mono-900
+    static let textLight = Color(light: 0x7A7A7F, dark: 0x80818E)     // mono-500
+
+    // Homey-kleuren (gelijk in licht en donker)
+    static let accent = Color(red: 0x00 / 255, green: 0x82 / 255, blue: 0xFA / 255)   // blue  #0082FA
+    static let green = Color(red: 0x3F / 255, green: 0xC7 / 255, blue: 0x00 / 255)    // green #3FC700
+    static let orange = Color(red: 0xFF / 255, green: 0x84 / 255, blue: 0x00 / 255)   // orange #FF8400
+    static let red = Color(red: 0xD8 / 255, green: 0x1C / 255, blue: 0x1D / 255)      // red   #D81C1D
+
+    // Warme kleuren voor de weergavemodus en het merk
     static let amber = Color(red: 1.0, green: 0.71, blue: 0.28)
     static let ember = Color(red: 1.0, green: 0.45, blue: 0.25)
     static let violet = Color(red: 0.42, green: 0.36, blue: 0.92)
     static let warmGradient = LinearGradient(colors: [amber, ember],
                                              startPoint: .topLeading, endPoint: .bottomTrailing)
-    static let corner: CGFloat = 26
+
+    // Raster en vormen: --homey-su = 4 px, --homey-border-radius-default = 12, -small = 6
+    static let su: CGFloat = 4
+    static let corner: CGFloat = 12
+    static let cornerSmall: CGFloat = 6
+    static let tileCorner: CGFloat = 12
 }
 
+/// Homey-lettermaten.
+enum HomeyFont {
+    static let xxlarge = Font.system(size: 32, weight: .bold, design: .rounded)
+    static let xlarge = Font.system(size: 24, weight: .bold)
+    static let large = Font.system(size: 20, weight: .medium)
+    static let body = Font.system(size: 17)
+    static let bodyMedium = Font.system(size: 17, weight: .medium)
+    static let bodyBold = Font.system(size: 17, weight: .bold)
+    static let small = Font.system(size: 14)
+}
+
+/// Weergave: automatisch, licht of donker.
+enum AppearanceSetting: String, CaseIterable, Identifiable {
+    case system, light, dark
+    var id: String { rawValue }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .system: return "Automatisch"
+        case .light: return "Licht"
+        case .dark: return "Donker"
+        }
+    }
+
+    var colorScheme: ColorScheme? {
+        switch self {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+}
+
+extension Color {
+    /// Kleur met een eigen waarde voor licht en donker.
+    init(light: UInt32, dark: UInt32) {
+        func rgb(_ hex: UInt32) -> (CGFloat, CGFloat, CGFloat) {
+            (CGFloat((hex >> 16) & 0xFF) / 255, CGFloat((hex >> 8) & 0xFF) / 255, CGFloat(hex & 0xFF) / 255)
+        }
+        let (lr, lg, lb) = rgb(light), (dr, dg, db) = rgb(dark)
+        self.init(UIColor { $0.userInterfaceStyle == .dark
+            ? UIColor(red: dr, green: dg, blue: db, alpha: 1)
+            : UIColor(red: lr, green: lg, blue: lb, alpha: 1) })
+    }
+}
+
+/// Effen Homey-kaart (licht: wit op lichtgrijs; donker: grafiet).
 struct GlassCard: ViewModifier {
     var corner: CGFloat = Theme.corner
 
     func body(content: Content) -> some View {
         content
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: corner, style: .continuous))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: corner, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: corner, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                    .strokeBorder(Theme.line, lineWidth: 1)
             )
     }
 }
@@ -106,8 +177,8 @@ extension View {
 
 /// Effen kaart (in de tabbladen, waar geen bewegende achtergrond achter zit).
 struct SolidCard: ViewModifier {
-    var corner: CGFloat = 22
-    var fill: Color = Color.white.opacity(0.07)
+    var corner: CGFloat = Theme.corner
+    var fill: Color = Theme.card
 
     func body(content: Content) -> some View {
         content
@@ -116,7 +187,7 @@ struct SolidCard: ViewModifier {
 }
 
 extension View {
-    func card(corner: CGFloat = 22, fill: Color = Color.white.opacity(0.07)) -> some View {
+    func card(corner: CGFloat = Theme.corner, fill: Color = Theme.card) -> some View {
         modifier(SolidCard(corner: corner, fill: fill))
     }
 }

@@ -38,10 +38,10 @@ struct WidgetCard<Content: View>: View {
         content()
             .padding(padding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+            .background(Theme.card, in: RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .strokeBorder(.white.opacity(0.08), lineWidth: 1)
+                RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 1)
             )
     }
 }
@@ -56,7 +56,7 @@ struct WidgetPlaceholder: View {
                 Image(systemName: symbol).font(.title2)
                 Text(text).font(.footnote).multilineTextAlignment(.center)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Theme.textLight)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
@@ -178,7 +178,7 @@ struct DeviceQuickControl: View {
                     .font(.system(size: 30, weight: .semibold, design: .rounded))
                     .contentTransition(.numericText())
                 if let now = device.currentTemperature {
-                    Text("nu \(now.oneDecimal)°").font(.caption).foregroundStyle(.secondary)
+                    Text("nu \(now.oneDecimal)°").font(.caption).foregroundStyle(Theme.textLight)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -194,10 +194,10 @@ struct DeviceQuickControl: View {
             Image(systemName: symbol)
                 .font(.headline)
                 .frame(width: 40, height: 40)
-                .background(Circle().fill(.white.opacity(0.12)))
+                .background(Circle().fill(Color.primary.opacity(0.12)))
         }
         .buttonStyle(PressableStyle())
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
     }
 
     private var power: some View {
@@ -205,10 +205,10 @@ struct DeviceQuickControl: View {
             VStack(spacing: 6) {
                 Image(systemName: "power")
                     .font(.system(size: 26, weight: .semibold))
-                    .foregroundStyle(device.isOn ? Color.black : Color.white)
+                    .foregroundStyle(device.isOn ? Color.black : Color.primary)
                     .frame(width: 58, height: 58)
-                    .background(Circle().fill(device.isOn ? AnyShapeStyle(device.tint) : AnyShapeStyle(Color.white.opacity(0.12))))
-                Text(device.stateText).font(.caption).foregroundStyle(.secondary)
+                    .background(Circle().fill(device.isOn ? AnyShapeStyle(device.tint) : AnyShapeStyle(Color.primary.opacity(0.12))))
+                Text(device.stateText).font(.caption).foregroundStyle(Theme.textLight)
             }
         }
         .buttonStyle(PressableStyle())
@@ -236,12 +236,12 @@ private struct SceneWidget: View {
                             .symbolEffect(.bounce, value: fired)
                         Spacer(minLength: 0)
                         Text(scene.name).font(.headline).lineLimit(2)
-                        Text("Tik om te starten").font(.caption).foregroundStyle(.secondary)
+                        Text("Tik om te starten").font(.caption).foregroundStyle(Theme.textLight)
                     }
                 }
             }
             .buttonStyle(PressableStyle())
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .sensoryFeedback(.success, trigger: fired)
         } else {
             WidgetPlaceholder(symbol: "sparkles", text: "Sfeer niet gevonden")
@@ -271,7 +271,7 @@ private struct RoomWidget: View {
                     }
                     Text(lightsOn == 1 ? "1 lamp aan" : "\(lightsOn) lampen aan")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                 }
                 if size == .large {
                     VStack(spacing: 6) {
@@ -311,12 +311,12 @@ private struct MiniDeviceRow: View {
                     .frame(width: 24)
                 Text(device.name).lineLimit(1)
                 Spacer()
-                Text(device.stateText).font(.caption).foregroundStyle(.secondary)
+                Text(device.stateText).font(.caption).foregroundStyle(Theme.textLight)
             }
             .font(.subheadline)
             .padding(.vertical, 6)
             .padding(.horizontal, 10)
-            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(.white.opacity(device.isOn ? 0.12 : 0.05)))
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(device.isOn ? 0.12 : 0.05)))
         }
         .buttonStyle(.plain)
     }
@@ -334,7 +334,7 @@ private struct ClockWidget: View {
                     AnalogClockView().frame(maxWidth: .infinity, maxHeight: .infinity)
                     Text(Date().formatted(.dateTime.weekday(.wide).day().month(.wide)).capitalized)
                         .font(.headline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                 }
             } else {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
@@ -347,7 +347,7 @@ private struct ClockWidget: View {
                             .lineLimit(1)
                         Text(context.date.formatted(.dateTime.weekday(size == .small ? .abbreviated : .wide).day().month(.abbreviated)).capitalized)
                             .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textLight)
                             .lineLimit(1)
                     }
                 }
@@ -375,7 +375,7 @@ private struct WeatherWidget: View {
                                 .font(.system(size: 32, weight: .semibold, design: .rounded))
                             Text(weather.place.isEmpty ? WeatherService.description(for: current.code) : weather.place)
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(Theme.textLight)
                                 .lineLimit(1)
                         }
                     }
@@ -386,7 +386,7 @@ private struct WeatherWidget: View {
                                 VStack(spacing: 4) {
                                     Text(hour.date, format: .dateTime.hour(.twoDigits(amPM: .omitted)))
                                         .font(.caption2)
-                                        .foregroundStyle(.secondary)
+                                        .foregroundStyle(Theme.textLight)
                                     Image(systemName: WeatherService.symbol(for: hour.code))
                                         .symbolRenderingMode(.multicolor)
                                     Text("\(Int(hour.temperature.rounded()))°").font(.caption.weight(.semibold))
@@ -396,14 +396,14 @@ private struct WeatherWidget: View {
                         }
                     }
                     if size == .large {
-                        Divider().overlay(.white.opacity(0.15))
+                        Divider().overlay(Color.primary.opacity(0.15))
                         ForEach(weather.days.prefix(4)) { day in
                             HStack {
                                 Text(Calendar.current.isDateInToday(day.date) ? "Vandaag" : day.date.formatted(.dateTime.weekday(.abbreviated)).capitalized)
                                     .frame(width: 70, alignment: .leading)
                                 Image(systemName: WeatherService.symbol(for: day.code)).symbolRenderingMode(.multicolor)
                                 Spacer()
-                                Text("\(Int(day.low.rounded()))°").foregroundStyle(.secondary)
+                                Text("\(Int(day.low.rounded()))°").foregroundStyle(Theme.textLight)
                                 Text("\(Int(day.high.rounded()))°")
                             }
                             .font(.subheadline)
@@ -415,7 +415,7 @@ private struct WeatherWidget: View {
                     Image(systemName: "cloud.sun").font(.title)
                     Text(weather.problem ?? "Weer laden…").font(.caption)
                 }
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
@@ -435,7 +435,7 @@ private struct CameraWidget: View {
             let feed = home.feed(for: accessory)
             CameraTile(feed: feed)
                 .onTapGesture { live = true }
-                .fullScreenCover(isPresented: $live) { CameraLiveView(feed: feed) }
+                .fullScreenCover(isPresented: $live) { CameraLiveView(feed: feed).environment(\.colorScheme, .dark) }
         } else {
             WidgetPlaceholder(symbol: "video.slash", text: "Camera niet gevonden")
         }
@@ -484,7 +484,7 @@ private struct TimersWidget: View {
                 TimelineView(.periodic(from: .now, by: 1)) { context in
                     VStack(alignment: .leading, spacing: 6) {
                         if timers.timers.isEmpty {
-                            Text("Geen timers").font(.subheadline).foregroundStyle(.secondary)
+                            Text("Geen timers").font(.subheadline).foregroundStyle(Theme.textLight)
                         }
                         ForEach(timers.timers.prefix(size == .large ? 4 : 1)) { timer in
                             HStack {
@@ -528,14 +528,14 @@ private struct CalendarWidget: View {
                 if calendar.events.isEmpty {
                     Text(calendar.denied ? "Geen toegang tot Agenda" : "Niets gepland")
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                 }
                 ForEach(calendar.events.prefix(size == .large ? 6 : 2), id: \.self) { event in
                     HStack(spacing: 8) {
                         RoundedRectangle(cornerRadius: 2).fill(event.color).frame(width: 4, height: 30)
                         VStack(alignment: .leading, spacing: 0) {
                             Text(event.title ?? "Afspraak").font(.subheadline.weight(.semibold)).lineLimit(1)
-                            Text(event.timeText).font(.caption).foregroundStyle(.secondary)
+                            Text(event.timeText).font(.caption).foregroundStyle(Theme.textLight)
                         }
                     }
                 }
@@ -558,7 +558,7 @@ private struct FlowsWidget: View {
             VStack(alignment: .leading, spacing: 8) {
                 WidgetHeader(title: "Flows", symbol: "arrow.triangle.branch", color: IconPalette.blue)
                 if home.triggers.isEmpty {
-                    Text("Nog geen flows").font(.subheadline).foregroundStyle(.secondary)
+                    Text("Nog geen flows").font(.subheadline).foregroundStyle(Theme.textLight)
                 }
                 ForEach(home.triggers.prefix(size == .large ? 6 : 2), id: \.uniqueIdentifier) { trigger in
                     HStack {
@@ -571,7 +571,7 @@ private struct FlowsWidget: View {
                             Image(systemName: "play.fill")
                                 .font(.caption)
                                 .frame(width: 30, height: 30)
-                                .background(Circle().fill(IconPalette.blue))
+                                .background(Circle().fill(Theme.accent))
                                 .foregroundStyle(.white)
                         }
                         .buttonStyle(PressableStyle())
@@ -596,7 +596,7 @@ private struct NoteWidget: View {
                 WidgetHeader(title: "Notitie", symbol: "note.text", color: IconPalette.yellow)
                 Text(text.isEmpty ? "Tik in bewerkmodus op deze notitie om tekst te schrijven." : text)
                     .font(text.isEmpty ? .footnote : (size == .large ? .title2 : .title3))
-                    .foregroundStyle(text.isEmpty ? Color.secondary : Color.white)
+                    .foregroundStyle(text.isEmpty ? Color.secondary : Color.primary)
                 Spacer(minLength: 0)
             }
         }

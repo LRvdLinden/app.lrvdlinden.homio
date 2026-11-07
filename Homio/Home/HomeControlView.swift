@@ -94,7 +94,7 @@ struct SectionTitle: View {
     var body: some View {
         Text(text)
             .font(.title2.weight(.bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
     }
 }
 
@@ -128,7 +128,7 @@ private struct SummaryRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .glassCard(corner: 16)
+        .glassCard()
     }
 }
 
@@ -229,6 +229,7 @@ struct CameraGrid: View {
         }
         .fullScreenCover(item: $live) { feed in
             CameraLiveView(feed: feed)
+                .environment(\.colorScheme, .dark)
         }
     }
 }

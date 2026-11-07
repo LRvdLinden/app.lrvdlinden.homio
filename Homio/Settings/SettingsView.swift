@@ -18,6 +18,9 @@ struct SettingsView: View {
     @State private var confirmSignOut = false
     @State private var showTimers = false
     @State private var showCameras = false
+    @State private var showWhatsNew = false
+    @AppStorage("appearance") private var appearance: AppearanceSetting = .system
+    @AppStorage("onboarding.done") private var onboardingDone = true
 
     var body: some View {
         NavigationStack {
@@ -36,7 +39,7 @@ struct SettingsView: View {
                         Label("Camera's", systemImage: "video.fill")
                     }
                 } header: {
-                    Text("Weergave")
+                    Text("Weergavemodus")
                 } footer: {
                     Text("De weergavemodus maakt van je iPad een bedienpaneel aan de muur, met klok, foto's, camera's en je dashboard.")
                 }
@@ -156,11 +159,32 @@ struct SettingsView: View {
                     Button("Afmelden", role: .destructive) { confirmSignOut = true }
                 }
 
-                Section("Over") {
-                    LabeledContent("Versie", value: Bundle.main.appVersion)
+                Section {
+                    Picker(selection: $appearance) {
+                        ForEach(AppearanceSetting.allCases) { option in
+                            Text(option.label).tag(option)
+                        }
+                    } label: {
+                        Label("Thema", systemImage: "circle.lefthalf.filled")
+                    }
+                    .pickerStyle(.segmented)
+                } header: {
+                    Text("Weergave")
+                } footer: {
+                    Text("De weergavemodus, het welkomstscherm en de wekker blijven altijd donker.")
+                }
+
+                Section {
+                    Button { showWhatsNew = true } label: {
+                        Label("Wat is nieuw", systemImage: "sparkles")
+                    }
+                    Button { onboardingDone = false } label: {
+                        Label("Toon het welkomstscherm", systemImage: "hand.wave")
+                    }
+                } header: {
+                    Text("Over")
+                } footer: {
                     Text("Weergegevens: Open-Meteo.com (CC BY 4.0)")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
                 }
 
                 Section {
@@ -170,10 +194,17 @@ struct SettingsView: View {
                 } header: {
                     Text(verbatim: MoreAppsText.current.section)
                 }
+
+                Section {
+                    AppInfoFooter()
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
+                }
             }
             .navigationTitle("Meer")
             .sheet(isPresented: $showTimers) { TimersView() }
             .sheet(isPresented: $showCameras) { CamerasView() }
+            .sheet(isPresented: $showWhatsNew) { WhatsNewView() }
             .toolbar {
                 if showsDone {
                     ToolbarItem(placement: .confirmationAction) {

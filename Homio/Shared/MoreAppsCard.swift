@@ -16,29 +16,6 @@ enum Brand {
     static let logoDot = Color(red: 0x4C / 255, green: 0x6B / 255, blue: 0xFF / 255)
 }
 
-extension Color {
-    /// Kleur met een eigen waarde voor licht en donker.
-    init(light: UInt32, dark: UInt32) {
-        #if os(watchOS)
-        self.init(hex24: dark)
-        #else
-        self.init(uiColor: UIColor { trait in
-            let v = trait.userInterfaceStyle == .dark ? dark : light
-            return UIColor(red: CGFloat((v >> 16) & 0xFF) / 255,
-                           green: CGFloat((v >> 8) & 0xFF) / 255,
-                           blue: CGFloat(v & 0xFF) / 255,
-                           alpha: 1)
-        })
-        #endif
-    }
-
-    init(hex24 v: UInt32) {
-        self.init(red: Double((v >> 16) & 0xFF) / 255,
-                  green: Double((v >> 8) & 0xFF) / 255,
-                  blue: Double(v & 0xFF) / 255)
-    }
-}
-
 /// Het "LR"-merk van lrvdlinden.app, natively getekend (ontwerpraster 512 × 512).
 struct LRLogo: View {
     var size: CGFloat = 60
@@ -140,10 +117,6 @@ struct MoreAppsCard: View {
                     .foregroundStyle(Brand.onAccent)
                     .padding(.horizontal, 14).padding(.vertical, 6)
                     .background(Brand.accent, in: Capsule())
-                Text(verbatim: "lrvdlinden.app")
-                    .font(.caption2)
-                    .foregroundStyle(Brand.muted)
-                    .lineLimit(1)
             }
         }
         .padding(16)

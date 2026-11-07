@@ -17,6 +17,7 @@ struct HomioApp: App {
     @StateObject private var relay = PushRelay.shared
     @StateObject private var groups = GroupStore()
     @StateObject private var cloud = CloudSync.shared
+    @AppStorage("appearance") private var appearance: AppearanceSetting = .system
 
     var body: some Scene {
         WindowGroup {
@@ -35,8 +36,8 @@ struct HomioApp: App {
                 .environmentObject(relay)
                 .environmentObject(groups)
                 .environmentObject(cloud)
-                .preferredColorScheme(.dark)
-                .tint(Theme.amber)
+                .preferredColorScheme(appearance.colorScheme)
+                .tint(Theme.accent)
         }
     }
 }

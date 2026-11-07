@@ -1,7 +1,7 @@
 import Combine
 import SwiftUI
 
-/// Splash → inloggen → hoofdscherm, met de wekker van de timers er altijd bovenop.
+/// Splash → welkom → inloggen → hoofdscherm, met de wekker van de timers er altijd bovenop.
 struct RootView: View {
     @EnvironmentObject private var auth: AuthStore
     @EnvironmentObject private var settings: SettingsStore
@@ -10,6 +10,7 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var splashDone = false
+    @AppStorage("onboarding.done") private var onboardingDone = false
 
     private let ticker = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -22,8 +23,15 @@ struct RootView: View {
                     withAnimation(.easeInOut(duration: 0.6)) { splashDone = true }
                 }
                 .transition(.opacity)
+                .environment(\.colorScheme, .dark)
+            } else if !onboardingDone {
+                OnboardingView {
+                    withAnimation(.easeInOut(duration: 0.5)) { onboardingDone = true }
+                }
+                .transition(.opacity)
             } else if !auth.isSignedIn {
                 LoginView()
+                    .environment(\.colorScheme, .dark)
                     .transition(.opacity.combined(with: .scale(scale: 1.03)))
             } else {
                 AppShell()
@@ -32,6 +40,7 @@ struct RootView: View {
 
             if let ringing = timers.ringing {
                 TimerAlarmView(timer: ringing)
+                    .environment(\.colorScheme, .dark)
                     .transition(.opacity)
                     .zIndex(10)
             }

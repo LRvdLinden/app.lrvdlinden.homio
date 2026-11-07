@@ -60,9 +60,9 @@ private struct DeviceControls: View {
             VStack(spacing: 6) {
                 Image(systemName: device.symbol)
                     .font(.system(size: 44))
-                    .foregroundStyle(device.isOn ? device.tint : .white.opacity(0.7))
+                    .foregroundStyle(device.isOn ? device.tint : Color.primary.opacity(0.7))
                 Text(device.stateText).font(.title2.weight(.semibold))
-                Text(device.roomName).foregroundStyle(.secondary)
+                Text(device.roomName).foregroundStyle(Theme.textLight)
             }
             .padding(.top, 24)
 
@@ -106,9 +106,9 @@ private struct PowerButton: View {
         } label: {
             Image(systemName: device.kind == .lock ? (device.isOn ? "lock.fill" : "lock.open.fill") : "power")
                 .font(.system(size: 54, weight: .medium))
-                .foregroundStyle(device.isOn ? Color.black : Color.white)
+                .foregroundStyle(device.isOn ? Color.black : Color.primary)
                 .frame(width: 160, height: 160)
-                .background(Circle().fill(device.isOn ? AnyShapeStyle(device.tint) : AnyShapeStyle(.white.opacity(0.12))))
+                .background(Circle().fill(device.isOn ? AnyShapeStyle(device.tint) : AnyShapeStyle(Color.primary.opacity(0.12))))
         }
         .buttonStyle(PressableStyle())
         .sensoryFeedback(.impact(weight: .medium), trigger: device.isOn)
@@ -126,11 +126,11 @@ struct VerticalSlider: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
-                Rectangle().fill(.white.opacity(0.12))
+                Rectangle().fill(Color.primary.opacity(0.12))
                 Rectangle().fill(tint).frame(height: geo.size.height * value)
                 Image(systemName: symbol)
                     .font(.title)
-                    .foregroundStyle(value > 0.15 ? Color.black.opacity(0.6) : Color.white.opacity(0.8))
+                    .foregroundStyle(value > 0.15 ? Color.black.opacity(0.6) : Color.primary.opacity(0.8))
                     .padding(.bottom, 22)
             }
             .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
@@ -227,7 +227,7 @@ private struct ThermostatControls: View {
             ZStack {
                 Circle()
                     .trim(from: 0.12, to: 0.88)
-                    .stroke(.white.opacity(0.1), style: StrokeStyle(lineWidth: 22, lineCap: .round))
+                    .stroke(Color.primary.opacity(0.1), style: StrokeStyle(lineWidth: 22, lineCap: .round))
                     .rotationEffect(.degrees(90))
                 Circle()
                     .trim(from: 0.12, to: 0.12 + 0.76 * fraction)
@@ -239,7 +239,7 @@ private struct ThermostatControls: View {
                         .font(.system(size: 72, weight: .light, design: .rounded))
                         .contentTransition(.numericText())
                     if let current = device.currentTemperature {
-                        Text("Nu \(current.oneDecimal)°").foregroundStyle(.secondary)
+                        Text("Nu \(current.oneDecimal)°").foregroundStyle(Theme.textLight)
                     }
                 }
             }
@@ -277,10 +277,10 @@ private struct ThermostatControls: View {
             Image(systemName: symbol)
                 .font(.title.weight(.semibold))
                 .frame(width: 76, height: 76)
-                .background(Circle().fill(.white.opacity(0.12)))
+                .background(Circle().fill(Color.primary.opacity(0.12)))
         }
         .buttonStyle(PressableStyle())
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .sensoryFeedback(.selection, trigger: target)
     }
 }

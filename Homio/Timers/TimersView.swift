@@ -32,7 +32,7 @@ struct TimersView: View {
                         TextField("Naam (bijv. Pasta)", text: $label)
                             .textFieldStyle(.plain)
                             .padding(16)
-                            .glassCard(corner: 16)
+                            .glassCard()
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), spacing: 12)], spacing: 12) {
                             ForEach(presets, id: \.self) { m in
                                 Button {
@@ -41,13 +41,13 @@ struct TimersView: View {
                                 } label: {
                                     VStack(spacing: 2) {
                                         Text("\(m)").font(.system(size: 34, weight: .semibold, design: .rounded))
-                                        Text("min").font(.subheadline).foregroundStyle(.white.opacity(0.6))
+                                        Text("min").font(.subheadline).foregroundStyle(Color.primary.opacity(0.6))
                                     }
                                     .frame(maxWidth: .infinity, minHeight: 90)
-                                    .glassCard(corner: 20)
+                                    .glassCard()
                                 }
                                 .buttonStyle(PressableStyle())
-                                .foregroundStyle(.white)
+                                .foregroundStyle(.primary)
                             }
                         }
 
@@ -86,7 +86,7 @@ struct TimersView: View {
                     .padding(sizeClass == .compact ? 16 : 28)
                 }
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
             .navigationTitle("Timers")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -105,7 +105,7 @@ private struct RunningTimerCard: View {
     var body: some View {
         HStack(spacing: 16) {
             ZStack {
-                Circle().stroke(.white.opacity(0.15), lineWidth: 8)
+                Circle().stroke(Color.primary.opacity(0.15), lineWidth: 8)
                 Circle()
                     .trim(from: 0, to: timer.progress(at: now))
                     .stroke(Theme.warmGradient, style: StrokeStyle(lineWidth: 8, lineCap: .round))
@@ -126,17 +126,17 @@ private struct RunningTimerCard: View {
                 Button { timers.togglePause(timer) } label: {
                     Image(systemName: timer.isPaused ? "play.fill" : "pause.fill")
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(.white.opacity(0.15)))
+                        .background(Circle().fill(Color.primary.opacity(0.15)))
                 }
                 .accessibilityLabel(timer.isPaused ? "Hervatten" : "Pauzeren")
                 Button(role: .destructive) { timers.remove(timer) } label: {
                     Image(systemName: "xmark")
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(.white.opacity(0.15)))
+                        .background(Circle().fill(Color.primary.opacity(0.15)))
                 }
                 .accessibilityLabel("Verwijderen")
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
         }
         .padding(16)
         .glassCard()
@@ -164,7 +164,7 @@ struct TimerAlarmView: View {
                         .symbolEffect(.bounce, options: .repeating, value: pulse)
                 }
                 Text("Timer afgelopen").font(.largeTitle.bold())
-                Text(timer.label).font(.title2).foregroundStyle(.white.opacity(0.7))
+                Text(timer.label).font(.title2).foregroundStyle(Color.primary.opacity(0.7))
                 Button {
                     timers.stopRinging()
                 } label: {
@@ -176,7 +176,7 @@ struct TimerAlarmView: View {
                 }
                 .buttonStyle(PressableStyle())
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(.primary)
         }
         .onAppear {
             withAnimation(.easeInOut(duration: 0.9).repeatForever(autoreverses: true)) { pulse = true }

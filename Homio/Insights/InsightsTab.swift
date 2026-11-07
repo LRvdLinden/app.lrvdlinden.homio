@@ -60,7 +60,7 @@ struct InsightsTab: View {
                 GradientIcon(symbol: "chart.xyaxis.line", colors: [IconPalette.orange, IconPalette.yellow], size: 52)
                 Text("Metingen worden verzameld").font(.title3.weight(.semibold))
                 Text("Apple Woning bewaart geen geschiedenis. Homio meet daarom zelf elke 5 minuten zolang de app open is. Op een iPad aan de muur heb je zo altijd een volledige grafiek. Kom over een uurtje terug.")
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textLight)
             }
             .padding(22)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -101,7 +101,7 @@ struct InsightsTab: View {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(dayTitle(day))
                         .font(.headline)
-                        .foregroundStyle(.white.opacity(0.7))
+                        .foregroundStyle(Color.primary.opacity(0.7))
                         .padding(.bottom, 8)
                     ForEach(groups[day] ?? []) { entry in
                         TimelineRow(entry: entry)
@@ -132,7 +132,7 @@ private struct TimelineRow: View {
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(IconPalette.orange.opacity(0.15)))
                 Rectangle()
-                    .fill(.white.opacity(0.1))
+                    .fill(Color.primary.opacity(0.1))
                     .frame(width: 2)
                     .frame(maxHeight: .infinity)
             }
@@ -140,13 +140,13 @@ private struct TimelineRow: View {
                 Text(entry.title).font(.subheadline.weight(.semibold))
                 Text(entry.room.isEmpty ? entry.detail : "\(entry.detail) · \(entry.room)")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textLight)
             }
             .padding(.bottom, 12)
             Spacer()
             Text(entry.date.formatted(date: .omitted, time: .shortened))
                 .font(.caption.monospacedDigit())
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
         }
     }
 }
@@ -159,7 +159,7 @@ private struct MetricCard: View {
         HStack(spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(metric.name).font(.headline).lineLimit(1)
-                Text(metric.room).font(.caption).foregroundStyle(.secondary)
+                Text(metric.room).font(.caption).foregroundStyle(Theme.textLight)
                 Text(history.latest(metric.key).map { metric.kind.format($0) } ?? "–")
                     .font(.system(size: 26, weight: .semibold, design: .rounded))
                     .foregroundStyle(metric.kind.color)
@@ -171,7 +171,7 @@ private struct MetricCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .card()
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
     }
 }
 
@@ -186,7 +186,7 @@ struct MetricSparkline: View {
         if points.count < 2 {
             Text("Te weinig metingen")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             Chart(points, id: \.t) { point in
@@ -272,7 +272,7 @@ struct MetricDetailView: View {
 
     private func stat(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(title).font(.caption).foregroundStyle(.secondary)
+            Text(title).font(.caption).foregroundStyle(Theme.textLight)
             Text(value).font(.title3.weight(.semibold)).foregroundStyle(metric.kind.color)
         }
         .padding(14)

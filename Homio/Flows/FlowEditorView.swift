@@ -104,7 +104,7 @@ struct FlowEditorView: View {
                 Section {
                     Text(draft.summary(home))
                         .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                 } header: {
                     Text("Samenvatting")
                 }
@@ -141,7 +141,7 @@ struct FlowEditorView: View {
         switch draft.when.kind {
         case .device:
             if triggerDevices.isEmpty {
-                Text("Geen apparaten die iets kunnen melden.").foregroundStyle(.secondary)
+                Text("Geen apparaten die iets kunnen melden.").foregroundStyle(Theme.textLight)
             } else {
                 Picker("Apparaat", selection: Binding(
                     get: { draft.when.deviceID ?? triggerDevices.first?.id },
@@ -192,7 +192,7 @@ struct FlowEditorView: View {
             }
             Text("Werkt met de locatie van gezinsleden in Apple Woning.")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
         }
     }
 
@@ -241,7 +241,7 @@ struct StepHeader: View {
             FlowBadge(text: badge, color: color)
             Text(text)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .textCase(nil)
                 .lineLimit(2)
         }
@@ -264,15 +264,15 @@ struct WeekdayPicker: View {
                         Text(Calendar.current.veryShortWeekdaySymbols[day - 1])
                             .font(.subheadline.weight(.bold))
                             .frame(width: 36, height: 36)
-                            .background(Circle().fill(on ? IconPalette.orange : Color.white.opacity(0.1)))
-                            .foregroundStyle(on ? Color.black : Color.white)
+                            .background(Circle().fill(on ? IconPalette.orange : Color.primary.opacity(0.1)))
+                            .foregroundStyle(on ? Color.black : Color.primary)
                     }
                     .buttonStyle(.plain)
                 }
             }
             Text(selection.isEmpty ? "Elke dag" : "Alleen op de gekozen dagen")
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
         }
     }
 }
@@ -292,9 +292,9 @@ private struct AndRow: View {
                 DatePicker("Van", selection: time(\.fromHour, \.fromMinute), displayedComponents: .hourAndMinute)
                 DatePicker("Tot", selection: time(\.toHour, \.toMinute), displayedComponents: .hourAndMinute)
             case .night:
-                Text("Tussen zonsondergang en zonsopkomst").font(.caption).foregroundStyle(.secondary)
+                Text("Tussen zonsondergang en zonsopkomst").font(.caption).foregroundStyle(Theme.textLight)
             case .day:
-                Text("Tussen zonsopkomst en zonsondergang").font(.caption).foregroundStyle(.secondary)
+                Text("Tussen zonsopkomst en zonsondergang").font(.caption).foregroundStyle(Theme.textLight)
             case .deviceState:
                 Picker("Apparaat", selection: $card.deviceID) {
                     ForEach(devices) { device in

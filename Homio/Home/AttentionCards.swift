@@ -78,7 +78,7 @@ struct AttentionSection: View {
         let items = AttentionBuilder.items(home: home).filter { !hidden.contains($0.id) }
         if !items.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Aandacht").font(.headline).foregroundStyle(.white.opacity(0.7))
+                Text("Aandacht").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 12) {
                         ForEach(items) { item in
@@ -112,15 +112,15 @@ private struct AttentionCard: View {
                 Button(action: onHide) {
                     Image(systemName: "xmark")
                         .font(.caption.weight(.bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                         .frame(width: 28, height: 28)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
+                        .background(Circle().fill(Color.primary.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("Verberg")
             }
             Text(item.title).font(.subheadline.weight(.semibold)).lineLimit(2)
-            Text(item.detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+            Text(item.detail).font(.caption).foregroundStyle(Theme.textLight).lineLimit(2)
             Spacer(minLength: 0)
             if let title = item.actionTitle, let action = item.action {
                 Button {
@@ -137,6 +137,6 @@ private struct AttentionCard: View {
         .padding(14)
         .frame(width: 220, height: 170, alignment: .topLeading)
         .card()
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
     }
 }

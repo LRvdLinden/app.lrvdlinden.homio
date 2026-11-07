@@ -79,7 +79,7 @@ struct ColorWheel: View {
                         }),
                         center: .center))
                 Circle()
-                    .fill(RadialGradient(colors: [.white, .white.opacity(0)],
+                    .fill(RadialGradient(colors: [.white, Color.primary.opacity(0)],
                                          center: .center, startRadius: 0, endRadius: radius))
                 Circle()
                     .fill(Color(hue: hue / 360, saturation: saturation / 100, brightness: 1))
@@ -136,7 +136,7 @@ private struct QuickColors: View {
                     Circle()
                         .fill(Color(hue: c.1 / 360, saturation: c.2 / 100, brightness: 1))
                         .frame(width: 30, height: 30)
-                        .overlay(Circle().strokeBorder(.white.opacity(0.35), lineWidth: 1.5))
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(0.35), lineWidth: 1.5))
                 }
                 .buttonStyle(PressableStyle())
                 .accessibilityLabel(c.0)
@@ -174,9 +174,9 @@ struct ColorTemperatureSlider: View {
                 .tint(.clear)
             }
             HStack {
-                Text("Warm").font(.caption).foregroundStyle(.secondary)
+                Text("Warm").font(.caption).foregroundStyle(Theme.textLight)
                 Spacer()
-                Text("Koel").font(.caption).foregroundStyle(.secondary)
+                Text("Koel").font(.caption).foregroundStyle(Theme.textLight)
             }
         }
     }

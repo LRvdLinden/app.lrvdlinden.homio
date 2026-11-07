@@ -87,9 +87,6 @@ struct WatchRootView: View {
                     }
                 }
 
-                Section(MoreAppsText.current.section) {
-                    MoreAppsCard()
-                }
             }
             .navigationTitle(home.home?.name ?? "Homio")
             .navigationDestination(for: String.self) { room in

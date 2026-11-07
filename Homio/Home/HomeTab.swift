@@ -132,7 +132,7 @@ struct HomeTab: View {
         return VStack(alignment: .leading, spacing: 12) {
             Text(greeting)
                 .font(.title2.weight(.semibold))
-                .foregroundStyle(.white.opacity(0.85))
+                .foregroundStyle(Color.primary.opacity(0.85))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     if let current = weather.current {
@@ -180,7 +180,7 @@ struct HomeTab: View {
 
     private var scenesRow: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sferen").font(.headline).foregroundStyle(.white.opacity(0.7))
+            Text("Sferen").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(home.scenes, id: \.uniqueIdentifier) { scene in
@@ -205,12 +205,12 @@ struct HomeTab: View {
                             .padding(.horizontal, 18)
                             .padding(.vertical, 14)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                                    .strokeBorder(.white.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                                RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
+                                    .strokeBorder(Color.primary.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
                             )
                     }
                     .buttonStyle(PressableStyle())
-                    .foregroundStyle(.white.opacity(0.8))
+                    .foregroundStyle(Color.primary.opacity(0.8))
                 }
                 .padding(.vertical, 2)
             }
@@ -233,7 +233,7 @@ struct HomeTab: View {
                     Text("Nog geen favorieten")
                         .font(.title3.weight(.semibold))
                     Text("Houd een apparaat ingedrukt en tik op de ster om het hier te zetten. Zo heeft elk gezinslid zijn eigen favorieten.")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.textLight)
                     Button("Bekijk alle apparaten") { zone = .all }
                         .buttonStyle(.borderedProminent)
                 }
@@ -267,7 +267,7 @@ struct HomeTab: View {
             if let room = home.rooms.first(where: { $0.name == name }) {
                 RoomSection(room: room, columns: columns, onOpen: nil)
             } else {
-                Text("Deze kamer heeft geen apparaten.").foregroundStyle(.secondary)
+                Text("Deze kamer heeft geen apparaten.").foregroundStyle(Theme.textLight)
             }
         }
     }
@@ -279,7 +279,7 @@ struct HomeTab: View {
 
     private var cameraStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Camera's").font(.headline).foregroundStyle(.white.opacity(0.7))
+            Text("Camera's").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     ForEach(home.cameras, id: \.uniqueIdentifier) { camera in
@@ -304,7 +304,7 @@ private struct CameraStripItem: View {
         CameraTile(feed: feed)
             .frame(width: 280, height: 170)
             .onTapGesture { live = true }
-            .fullScreenCover(isPresented: $live) { CameraLiveView(feed: feed) }
+            .fullScreenCover(isPresented: $live) { CameraLiveView(feed: feed).environment(\.colorScheme, .dark) }
     }
 }
 
@@ -337,7 +337,7 @@ private struct RoomSection: View {
                     HStack(spacing: 6) {
                         Text(room.name).font(.title2.weight(.bold))
                         if onOpen != nil {
-                            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(.secondary)
+                            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.textLight)
                         }
                     }
                 }
@@ -392,7 +392,7 @@ struct StatusChip: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
-        .card(corner: 16)
+        .card()
     }
 }
 
@@ -411,8 +411,8 @@ struct ZoneChip: View {
             .font(.subheadline.weight(.semibold))
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .foregroundStyle(selected ? Color.black : Color.white)
-            .background(Capsule().fill(selected ? AnyShapeStyle(IconPalette.orange) : AnyShapeStyle(Color.white.opacity(0.08))))
+            .foregroundStyle(selected ? Color.white : Color.primary)
+            .background(Capsule().fill(selected ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.pill)))
         }
         .buttonStyle(PressableStyle())
     }

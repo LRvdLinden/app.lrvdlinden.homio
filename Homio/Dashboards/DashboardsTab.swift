@@ -29,12 +29,12 @@ struct DashboardsTab: View {
                                         .font(.headline)
                                         .frame(maxWidth: .infinity, minHeight: 64)
                                         .overlay(
-                                            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                                                .strokeBorder(.white.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                                            RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
+                                                .strokeBorder(Color.primary.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
                                         )
                                 }
                                 .buttonStyle(PressableStyle())
-                                .foregroundStyle(.white.opacity(0.85))
+                                .foregroundStyle(Color.primary.opacity(0.85))
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                             }
                         } else {
@@ -52,7 +52,7 @@ struct DashboardsTab: View {
                 .scrollIndicators(.hidden)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AmbientBackground(intensity: 0.3))
+            .background(Theme.background)
             .navigationTitle(store.selected?.name ?? "Dashboards")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -134,10 +134,10 @@ struct DashboardsTab: View {
                     Image(systemName: "plus")
                         .font(.subheadline.weight(.bold))
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(Color.white.opacity(0.08)))
+                        .background(Circle().fill(Color.primary.opacity(0.08)))
                 }
                 .buttonStyle(PressableStyle())
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .accessibilityLabel("Nieuw dashboard")
             }
         }

@@ -91,7 +91,7 @@ struct FlowsTab: View {
             FlowBadge(text: "DAN", color: IconPalette.blue)
             Text("Flows draaien op je woninghub, ook als Homio dicht is.")
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
         }
     }
 
@@ -100,7 +100,7 @@ struct FlowsTab: View {
             GradientIcon(symbol: "arrow.triangle.branch", colors: [IconPalette.orange, IconPalette.blue], size: 56)
             Text("Laat je huis zelf werken").font(.title2.weight(.bold))
             Text("Maak een flow: als er iets gebeurt, en het klopt, dan doet Homio iets. Bijvoorbeeld: als de gang beweging ziet en het is donker, dan gaat de ganglamp aan en na 5 minuten weer uit.")
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Theme.textLight)
             Button {
                 editing = FlowEditTarget(draft: FlowDraft(), trigger: nil)
             } label: {
@@ -117,7 +117,7 @@ struct FlowsTab: View {
 
     private var templates: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Snel beginnen").font(.headline).foregroundStyle(.white.opacity(0.7))
+            Text("Snel beginnen").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
                     template("Licht bij beweging", "figure.walk.motion") {
@@ -192,7 +192,7 @@ struct FlowsTab: View {
             .card()
         }
         .buttonStyle(PressableStyle())
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
     }
 }
 
@@ -232,7 +232,7 @@ private struct FlowCard: View {
                     if let last = trigger.lastFireDate {
                         Text("Laatst: \(last.formatted(.relative(presentation: .named)))")
                             .font(.caption)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textLight)
                     }
                 }
                 Spacer()
@@ -245,7 +245,7 @@ private struct FlowCard: View {
             }
             Text(flows.summary(for: trigger))
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(Color.primary.opacity(0.75))
                 .lineLimit(4)
             HStack(spacing: 8) {
                 Button {
@@ -270,7 +270,7 @@ private struct FlowCard: View {
             if !editable {
                 Text("Gemaakt in de Woning-app. Aan/uit en uitvoeren kan hier; bewerken in de Woning-app.")
                     .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textLight)
             }
         }
         .padding(18)

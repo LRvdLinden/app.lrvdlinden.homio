@@ -40,6 +40,7 @@ struct AppShell: View {
         }
         .fullScreenCover(isPresented: $displayMode) {
             MainView()
+                .environment(\.colorScheme, .dark)
         }
         .modifier(ReviewPromptModifier(blocked: displayMode))
         .onChange(of: home.isReady) { _, ready in

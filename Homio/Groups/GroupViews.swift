@@ -13,44 +13,45 @@ struct GroupTile: View {
     var body: some View {
         let state = GroupState(group: group, home: home)
         let on = state.isOn
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        VStack(alignment: .leading, spacing: Theme.su * 1.5) {
+            HStack(alignment: .top) {
                 Image(systemName: group.symbol)
-                    .font(.title2)
-                    .foregroundStyle(on ? IconPalette.orange : .white.opacity(0.85))
-                    .frame(width: 46, height: 46)
-                    .background(Circle().fill(on ? IconPalette.orange.opacity(0.2) : .white.opacity(0.1)))
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(on ? Color.white : Color.secondary)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(on ? AnyShapeStyle(Theme.orange.gradient) : AnyShapeStyle(Theme.pill)))
                 Spacer()
                 Text("\(state.members.count)")
                     .font(.caption.weight(.bold))
+                    .foregroundStyle(Theme.textLight)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Capsule().fill(on ? Color.black.opacity(0.1) : Color.white.opacity(0.12)))
+                    .background(Capsule().fill(Theme.pill))
             }
-            Spacer(minLength: 4)
-            Text(group.name).font(.headline).lineLimit(2)
+            Spacer(minLength: Theme.su)
+            Text(group.name).font(HomeyFont.bodyMedium).lineLimit(2)
             Text(state.stateText)
-                .font(.subheadline)
-                .foregroundStyle(on ? Color.black.opacity(0.55) : Color.white.opacity(0.6))
+                .font(HomeyFont.small)
+                .foregroundStyle(on ? Theme.orange : Color.secondary)
                 .lineLimit(1)
         }
-        .foregroundStyle(on ? Color.black : Color.white)
-        .padding(16)
+        .foregroundStyle(.primary)
+        .padding(Theme.su * 4)
         .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(on ? AnyShapeStyle(LinearGradient(colors: [IconPalette.yellow, Color.white.opacity(0.95)],
-                                                        startPoint: .topLeading, endPoint: .bottomTrailing))
-                         : AnyShapeStyle(.ultraThinMaterial))
+            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                .fill(Theme.card)
+                .overlay(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                    .fill(Theme.orange.opacity(on ? 0.12 : 0)))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(.white.opacity(on ? 0 : 0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                .strokeBorder(on ? Theme.orange.opacity(0.5) : Theme.line, lineWidth: 1)
         }
         .scaleEffect(pressing ? 0.95 : 1)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pressing)
         .animation(.easeInOut(duration: 0.25), value: on)
-        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
         .onTapGesture { state.toggle(home) }
         .onLongPressGesture(minimumDuration: 0.4, perform: {
             showDetail = true
@@ -110,9 +111,9 @@ struct GroupDetailSheet: View {
                 Button { state.toggle(home) } label: {
                     Image(systemName: "power")
                         .font(.system(size: 50, weight: .medium))
-                        .foregroundStyle(state.isOn ? Color.black : Color.white)
+                        .foregroundStyle(state.isOn ? Color.white : Color.primary)
                         .frame(width: 150, height: 150)
-                        .background(Circle().fill(state.isOn ? AnyShapeStyle(IconPalette.orange) : AnyShapeStyle(Color.white.opacity(0.12))))
+                        .background(Circle().fill(state.isOn ? AnyShapeStyle(IconPalette.orange) : AnyShapeStyle(Color.primary.opacity(0.12))))
                 }
                 .buttonStyle(PressableStyle())
                 .sensoryFeedback(.impact(weight: .medium), trigger: state.isOn)
@@ -130,7 +131,7 @@ struct GroupDetailSheet: View {
                         .tint(IconPalette.yellow)
                         Text(level > 0 ? "\(Int(level))%" : "Uit")
                             .font(.caption.monospacedDigit())
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(Theme.textLight)
                     }
                     .padding(16)
                     .card()
@@ -177,8 +178,8 @@ struct GroupEditorView: View {
                                     Image(systemName: symbol)
                                         .font(.title3)
                                         .frame(width: 44, height: 44)
-                                        .background(Circle().fill(group.symbol == symbol ? IconPalette.orange : Color.white.opacity(0.1)))
-                                        .foregroundStyle(group.symbol == symbol ? Color.black : Color.white)
+                                        .background(Circle().fill(group.symbol == symbol ? IconPalette.orange : Color.primary.opacity(0.1)))
+                                        .foregroundStyle(group.symbol == symbol ? Color.white : Color.primary)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -203,7 +204,7 @@ struct GroupEditorView: View {
                                     .frame(width: 26)
                                 VStack(alignment: .leading, spacing: 1) {
                                     Text(device.name).foregroundStyle(.primary)
-                                    Text(device.roomName).font(.caption).foregroundStyle(.secondary)
+                                    Text(device.roomName).font(.caption).foregroundStyle(Theme.textLight)
                                 }
                                 Spacer()
                                 Image(systemName: selected ? "checkmark.circle.fill" : "circle")
@@ -256,7 +257,7 @@ struct GroupsSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
-                Text("Groepen").font(.headline).foregroundStyle(.white.opacity(0.7))
+                Text("Groepen").font(.headline).foregroundStyle(Color.primary.opacity(0.7))
                 Spacer()
                 Button { creating = true } label: {
                     Label("Nieuwe groep", systemImage: "plus")
@@ -267,7 +268,7 @@ struct GroupsSection: View {
             if groups.groups.isEmpty {
                 Text("Bundel lampen of stekkers uit verschillende kamers tot één knop, bijv. \"Alle buitenlampen\".")
                     .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Theme.textLight)
             } else {
                 LazyVGrid(columns: columns, spacing: 12) {
                     ForEach(groups.groups) { GroupTile(group: $0) }

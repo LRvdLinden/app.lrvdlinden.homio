@@ -12,44 +12,55 @@ struct DeviceTile: View {
 
     var body: some View {
         let on = device.isOn && !device.kind.isSensor
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
+        VStack(alignment: .leading, spacing: Theme.su * 1.5) {
+            HStack(alignment: .top) {
                 Image(systemName: device.symbol)
-                    .font(.title2)
-                    .foregroundStyle(on ? device.tint : .white.opacity(0.85))
-                    .frame(width: 46, height: 46)
-                    .background(Circle().fill(on ? device.tint.opacity(0.2) : .white.opacity(0.1)))
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(on ? Color.white : Color.secondary)
+                    .frame(width: 44, height: 44)
+                    .background(Circle().fill(on ? AnyShapeStyle(device.tint.gradient) : AnyShapeStyle(Theme.pill)))
                     .contentTransition(.symbolEffect(.replace))
                 Spacer()
                 if !device.isReachable {
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.yellow)
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(HomeyFont.small)
+                        .foregroundStyle(Theme.orange)
+                } else if device.isToggleable {
+                    Circle()
+                        .fill(on ? device.tint : Theme.line)
+                        .frame(width: 8, height: 8)
+                        .padding(6)
                 }
             }
-            Spacer(minLength: 4)
+            Spacer(minLength: Theme.su)
             Text(device.name)
-                .font(.headline)
+                .font(HomeyFont.bodyMedium)
+                .foregroundStyle(.primary)
                 .lineLimit(2)
             Text(device.stateText)
-                .font(.subheadline)
-                .foregroundStyle(on ? Color.black.opacity(0.55) : Color.white.opacity(0.6))
+                .font(HomeyFont.small)
+                .foregroundStyle(on ? device.tint : Color.secondary)
                 .lineLimit(1)
                 .contentTransition(.numericText())
         }
-        .foregroundStyle(on ? Color.black : Color.white)
-        .padding(16)
+        .padding(Theme.su * 4)
         .frame(maxWidth: .infinity, minHeight: minHeight, maxHeight: fillsHeight ? .infinity : nil, alignment: .topLeading)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(on ? AnyShapeStyle(Color.white.opacity(0.93)) : AnyShapeStyle(.ultraThinMaterial))
+            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                .fill(Theme.card)
+                .overlay(
+                    RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                        .fill(device.tint.opacity(on ? 0.12 : 0))
+                )
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(.white.opacity(on ? 0 : 0.08), lineWidth: 1)
+            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
+                .strokeBorder(on ? device.tint.opacity(0.5) : Theme.line, lineWidth: 1)
         }
         .scaleEffect(pressing ? 0.95 : 1)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pressing)
         .animation(.easeInOut(duration: 0.25), value: on)
-        .contentShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
         .onTapGesture {
             if device.isToggleable { home.toggle(device) } else { showDetail = true }
         }
@@ -87,10 +98,10 @@ struct SceneChip: View {
             }
             .padding(.horizontal, 18)
             .padding(.vertical, 14)
-            .glassCard(corner: 20)
+            .glassCard()
         }
         .buttonStyle(PressableStyle())
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .sensoryFeedback(.success, trigger: fired)
     }
 }

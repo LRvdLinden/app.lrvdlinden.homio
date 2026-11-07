@@ -87,7 +87,7 @@ struct DashboardGridView: View {
                     .allowsHitTesting(!editing)
                     .overlay {
                         if editing {
-                            Color.white.opacity(0.001)
+                            Color.primary.opacity(0.001)
                                 .contentShape(Rectangle())
                                 .onTapGesture {
                                     if widget.kind == .note {
@@ -214,7 +214,7 @@ struct DashboardFace: View {
                 }
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(.primary)
         .onAppear { if home.isReady { store.ensureDefault(home: home) } }
     }
 }
