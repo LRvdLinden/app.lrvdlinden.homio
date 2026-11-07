@@ -34,7 +34,7 @@ enum DeviceEventKind: String, Codable, CaseIterable {
         case .turnsOff: return "gaat uit"
         case .opens: return "gaat open"
         case .closes: return "gaat dicht"
-        case .motion: return "ziet beweging"
+        case .motion: return "ziet beweging of slaat alarm"
         case .locked: return "gaat op slot"
         case .unlocked: return "gaat van het slot"
         case .above: return "komt boven"
@@ -46,12 +46,13 @@ enum DeviceEventKind: String, Codable, CaseIterable {
 
     static func options(for kind: DeviceKind) -> [DeviceEventKind] {
         switch kind {
-        case .light, .outlet, .switchKind, .fan: return [.turnsOn, .turnsOff]
+        case .light, .outlet, .switchKind, .fan, .airPurifier, .heaterCooler, .humidifier, .valve:
+            return [.turnsOn, .turnsOff]
         case .lock: return [.locked, .unlocked]
         case .contact, .garage: return [.opens, .closes]
-        case .motion: return [.motion]
+        case .motion, .occupancy, .smoke, .carbonMonoxide, .leak: return [.motion]
         case .temperature, .humidity, .thermostat: return [.above, .below]
-        case .blinds: return []
+        default: return []
         }
     }
 }
