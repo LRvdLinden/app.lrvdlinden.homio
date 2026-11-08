@@ -270,9 +270,15 @@ struct WhenFields: View {
                     }
                 }
                 if draft.when.event.needsThreshold {
-                    Stepper(value: $draft.when.threshold, in: device.kind == .humidity ? 0.0...100.0 : -10.0...40.0,
-                            step: device.kind == .humidity ? 5 : 0.5) {
-                        LabeledContent("Grens", value: "\(draft.when.threshold.oneDecimal)\(device.thresholdUnit)")
+                    if device.kind == .lux {
+                        Stepper(value: $draft.when.threshold, in: 0.0...10_000.0, step: draft.when.threshold < 100 ? 5 : 50) {
+                            LabeledContent("Grens", value: "\(Int(draft.when.threshold)) lux")
+                        }
+                    } else {
+                        Stepper(value: $draft.when.threshold, in: device.kind == .humidity ? 0.0...100.0 : -10.0...40.0,
+                                step: device.kind == .humidity ? 5 : 0.5) {
+                            LabeledContent("Grens", value: "\(draft.when.threshold.oneDecimal)\(device.thresholdUnit)")
+                        }
                     }
                 }
             } else {
@@ -396,6 +402,33 @@ private struct AndRow: View {
                         Text(device.stateWords.off).tag(false)
                     }
                     .pickerStyle(.segmented)
+                }
+            case .sensor:
+                let sensors = home.devices.filter(\.hasSensorValue)
+                Picker("Sensor", selection: $card.deviceID) {
+                    ForEach(sensors) { device in
+                        Text("\(device.name) · \(device.roomName)").tag(Optional(device.id))
+                    }
+                }
+                if let id = card.deviceID, let device = home.device(id: id) {
+                    Picker("Waarde is", selection: $card.isBelow) {
+                        Text("Onder").tag(true)
+                        Text("Boven").tag(false)
+                    }
+                    .pickerStyle(.segmented)
+                    if device.kind == .lux {
+                        Stepper(value: $card.value, in: 0...10_000, step: card.value < 100 ? 5 : 50) {
+                            LabeledContent("Grens", value: "\(Int(card.value)) lux")
+                        }
+                        Text("Nu: \(Int(device.number(HMCharacteristicTypeCurrentLightLevel) ?? 0)) lux. Een kamer met de lampen uit in de avond zit meestal onder 10–30 lux.")
+                            .font(.caption)
+                            .foregroundStyle(Theme.textLight)
+                    } else {
+                        Stepper(value: $card.value, in: device.kind == .humidity ? 0...100 : -20...40,
+                                step: device.kind == .humidity ? 5 : 0.5) {
+                            LabeledContent("Grens", value: "\(card.value.oneDecimal)\(device.thresholdUnit)")
+                        }
+                    }
                 }
             }
         }

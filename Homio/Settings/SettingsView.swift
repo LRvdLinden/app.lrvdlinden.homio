@@ -27,22 +27,25 @@ struct SettingsView: View {
             Form {
                 // Profiel en woning bovenaan, zoals in de Homey-app.
                 Section {
-                    HStack(spacing: 14) {
-                        Text(verbatim: String((auth.displayName.isEmpty ? "H" : auth.displayName).prefix(1)).uppercased())
-                            .font(.system(size: 22, weight: .bold))
-                            .foregroundStyle(.white)
-                            .frame(width: 52, height: 52)
-                            .background(Circle().fill(Theme.blueGradient))
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(auth.displayName.isEmpty ? "Homio" : auth.displayName)
-                                .font(.system(size: 17, weight: .semibold))
-                                .foregroundStyle(Theme.text)
-                            Text(settings.activeProfile.map { "Profiel: \($0.name)" } ?? "Ingelogd met Apple")
-                                .font(.system(size: 13))
-                                .foregroundStyle(Theme.textLight)
+                    if let profile = settings.activeProfile {
+                        NavigationLink {
+                            ProfileEditView(profileID: profile.id)
+                        } label: {
+                            HStack(spacing: 14) {
+                                ProfileAvatar(profile: profile, size: 52)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(profile.name)
+                                        .font(.system(size: 17, weight: .semibold))
+                                        .foregroundStyle(Theme.text)
+                                    Text(auth.displayName.isEmpty ? "Naam en foto wijzigen" : "Ingelogd met Apple · \(auth.displayName)")
+                                        .font(.system(size: 13))
+                                        .foregroundStyle(Theme.textLight)
+                                        .lineLimit(1)
+                                }
+                            }
+                            .padding(.vertical, 4)
                         }
                     }
-                    .padding(.vertical, 4)
                     HStack(spacing: 14) {
                         Image(systemName: "house.fill")
                             .font(.system(size: 20))
@@ -100,11 +103,7 @@ struct SettingsView: View {
                             settings.activeProfileID = profile.id
                         } label: {
                             HStack(spacing: 14) {
-                                Text(profile.initial)
-                                    .font(.headline)
-                                    .foregroundStyle(.black)
-                                    .frame(width: 36, height: 36)
-                                    .background(Circle().fill(profile.color))
+                                ProfileAvatar(profile: profile, size: 36)
                                 Text(profile.name).foregroundStyle(.primary)
                                 Spacer()
                                 if profile.id == settings.activeProfile?.id {

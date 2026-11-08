@@ -43,6 +43,8 @@ struct Profile: Identifiable, Codable, Hashable {
     var name: String
     var colorIndex: Int
     var favoriteDeviceIDs: [UUID] = []
+    /// Profielfoto als kleine JPEG (± 240 px), zodat hij via iCloud mee kan.
+    var photo: Data?
 
     static let palette: [Color] = [Theme.amber, .pink, .mint, .cyan, .purple, .orange]
     var color: Color { Profile.palette[abs(colorIndex) % Profile.palette.count] }
@@ -161,6 +163,16 @@ final class SettingsStore: ObservableObject {
         let profile = Profile(name: trimmed, colorIndex: profiles.count)
         profiles.append(profile)
         activeProfileID = profile.id
+    }
+
+    /// Naam en/of foto van een profiel aanpassen.
+    func updateProfile(_ id: UUID, name: String? = nil, photo: Data?? = nil) {
+        guard let index = profiles.firstIndex(where: { $0.id == id }) else { return }
+        if let name {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty { profiles[index].name = trimmed }
+        }
+        if let photo { profiles[index].photo = photo }
     }
 
     func removeProfiles(at offsets: IndexSet) {

@@ -100,7 +100,10 @@ struct HomeTab: View {
         if s.lightsOn > 0 { parts.append(s.lightsOn == 1 ? "1 lamp aan" : "\(s.lightsOn) lampen aan") }
         let sentence = parts.isEmpty ? "Welkom thuis." : parts.joined(separator: ", ") + "."
         return VStack(alignment: .leading, spacing: 4) {
-            Text(greeting).font(HomeyFont.xlarge).foregroundStyle(Theme.text)
+            HStack(spacing: 12) {
+                ProfileAvatar(profile: settings.activeProfile, size: 40)
+                Text(greeting).font(HomeyFont.xlarge).foregroundStyle(Theme.text)
+            }
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 if let current = weather.current {
                     Image(systemName: WeatherService.symbol(for: current.code, isDay: current.isDay))

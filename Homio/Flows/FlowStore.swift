@@ -337,8 +337,7 @@ final class FlowStore: ObservableObject {
             guard let c = alarmTypes.lazy.compactMap({ device.characteristic($0) }).first else { return nil }
             return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: 1))
         case .above, .below:
-            let type = device.kind == .humidity ? HMCharacteristicTypeCurrentRelativeHumidity : HMCharacteristicTypeCurrentTemperature
-            guard let c = device.characteristic(type) else { return nil }
+            guard let c = device.sensorCharacteristic else { return nil }
             let range = kind == .above
                 ? HMNumberRange(minValue: NSNumber(value: threshold))
                 : HMNumberRange(maxValue: NSNumber(value: threshold))
@@ -387,6 +386,13 @@ final class FlowStore: ObservableObject {
                 parts.append(HMEventTrigger.predicateForEvaluatingTrigger(
                     condition.characteristic, relatedBy: .equalTo,
                     toValue: card.deviceOn ? condition.on : condition.off))
+            case .sensor:
+                // Bijv. "lichtsterkte is onder 30 lux" — wordt op het moment van de trigger gecontroleerd.
+                guard let id = card.deviceID, let device = store.device(id: id),
+                      let c = device.sensorCharacteristic else { continue }
+                parts.append(HMEventTrigger.predicateForEvaluatingTrigger(
+                    c, relatedBy: card.isBelow ? .lessThan : .greaterThan,
+                    toValue: NSNumber(value: card.value)))
             }
         }
         if parts.isEmpty { return nil }

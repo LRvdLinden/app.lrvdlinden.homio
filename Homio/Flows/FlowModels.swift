@@ -51,7 +51,7 @@ enum DeviceEventKind: String, Codable, CaseIterable {
         case .lock: return [.locked, .unlocked]
         case .contact, .garage: return [.opens, .closes]
         case .motion, .occupancy, .smoke, .carbonMonoxide, .leak: return [.motion]
-        case .temperature, .humidity, .thermostat: return [.above, .below]
+        case .temperature, .humidity, .thermostat, .lux: return [.above, .below]
         default: return []
         }
     }
@@ -105,10 +105,11 @@ struct WhenCard: Codable, Hashable {
 // MARK: EN
 
 enum AndKind: String, Codable, CaseIterable {
-    case timeBetween, night, day, deviceState
+    case timeBetween, night, day, deviceState, sensor
 
     var title: String {
         switch self {
+        case .sensor: return "Een sensor is onder of boven een waarde"
         case .timeBetween: return "Tussen twee tijden"
         case .night: return "Als het donker is"
         case .day: return "Als het licht is"
@@ -122,6 +123,7 @@ enum AndKind: String, Codable, CaseIterable {
         case .night: return "moon.stars.fill"
         case .day: return "sun.max.fill"
         case .deviceState: return "switch.2"
+        case .sensor: return "gauge.with.dots.needle.33percent"
         }
     }
 }
@@ -135,6 +137,19 @@ struct AndCard: Identifiable, Codable, Hashable {
     var toMinute = 0
     var deviceID: UUID?
     var deviceOn = true
+    /// Voor sensor-voorwaarden (optioneel, zodat oude flows blijven werken).
+    var sensorBelow: Bool?
+    var sensorValue: Double?
+
+    var isBelow: Bool {
+        get { sensorBelow ?? true }
+        set { sensorBelow = newValue }
+    }
+
+    var value: Double {
+        get { sensorValue ?? 30 }
+        set { sensorValue = newValue }
+    }
 }
 
 // MARK: DAN
@@ -198,7 +213,36 @@ extension Device {
         }
     }
 
-    var thresholdUnit: String { kind == .humidity ? "%" : "°" }
+    var thresholdUnit: String {
+        switch kind {
+        case .humidity: return "%"
+        case .lux: return " lux"
+        default: return "°"
+        }
+    }
+
+    /// Naam van de meetwaarde, voor in flow-kaarten.
+    var measureName: String {
+        switch kind {
+        case .humidity: return "Vochtigheid"
+        case .lux: return "Lichtsterkte"
+        default: return "Temperatuur"
+        }
+    }
+
+    /// Sensoren met een getal dat je in een voorwaarde kunt gebruiken.
+    var hasSensorValue: Bool {
+        [.lux, .temperature, .humidity].contains(kind) || (kind == .thermostat && currentTemperature != nil)
+    }
+
+    /// Het meetkenmerk dat bij die waarde hoort.
+    var sensorCharacteristic: HMCharacteristic? {
+        switch kind {
+        case .lux: return characteristic(HMCharacteristicTypeCurrentLightLevel)
+        case .humidity: return characteristic(HMCharacteristicTypeCurrentRelativeHumidity)
+        default: return characteristic(HMCharacteristicTypeCurrentTemperature)
+        }
+    }
 }
 
 // MARK: Beschrijvingen in gewone taal
@@ -239,6 +283,10 @@ extension FlowDraft {
             guard let id = card.deviceID, let device = home.device(id: id) else { return "Kies een apparaat" }
             let words = device.stateWords
             return "\(device.name) is \(card.deviceOn ? words.on : words.off)"
+        case .sensor:
+            guard let id = card.deviceID, let device = home.device(id: id) else { return "Kies een sensor" }
+            let value = device.kind == .lux ? "\(Int(card.value))" : card.value.oneDecimal
+            return "\(device.measureName) van \(device.name) is \(card.isBelow ? "onder" : "boven") \(value)\(device.thresholdUnit)"
         }
     }
 

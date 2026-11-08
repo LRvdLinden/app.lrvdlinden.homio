@@ -209,8 +209,8 @@ struct FlowCardFactory {
                 return (.app(symbol: "questionmark", color: .gray), "Apparaat", [.t("Kies een apparaat")], true)
             }
             if w.event.needsThreshold {
-                let what = d.kind == .humidity ? "Vochtigheid" : "Temperatuur"
-                return (.device(d), "\(d.name) — \(d.roomName)", [.t("\(what) \(w.event.label) "), .a("\(w.threshold.oneDecimal)\(d.thresholdUnit)")], false)
+                let value = d.kind == .lux ? "\(Int(w.threshold)) lux" : "\(w.threshold.oneDecimal)\(d.thresholdUnit)"
+                return (.device(d), "\(d.name) — \(d.roomName)", [.t("\(d.measureName) \(w.event.label) "), .a(value)], false)
             }
             return (.device(d), "\(d.name) — \(d.roomName)", [.t(w.event.label.capitalizedFirst)], false)
         case .time:
@@ -247,6 +247,13 @@ struct FlowCardFactory {
                 return (.app(symbol: "questionmark", color: .gray), "Apparaat", [.t("Kies een apparaat")], true)
             }
             return (.device(d), "\(d.name) — \(d.roomName)", [.t("Is "), .a(c.deviceOn ? d.stateWords.on : d.stateWords.off)], false)
+        case .sensor:
+            guard let id = c.deviceID, let d = home.device(id: id) else {
+                return (.app(symbol: "questionmark", color: .gray), "Sensor", [.t("Kies een sensor")], true)
+            }
+            let value = d.kind == .lux ? "\(Int(c.value)) lux" : "\(c.value.oneDecimal)\(d.thresholdUnit)"
+            return (.device(d), "\(d.name) — \(d.roomName)",
+                    [.t("\(d.measureName) is "), .a(c.isBelow ? "onder" : "boven"), .t(" "), .a(value)], false)
         }
     }
 
@@ -390,7 +397,7 @@ struct FlowCardPicker: View {
             RoomGroup(name: room.name, devices: room.devices.filter { d in
                 switch type {
                 case .when: return d.canTrigger
-                case .and: return d.hasStateCondition
+                case .and: return d.hasStateCondition || d.hasSensorValue
                 case .then: return d.canBeControlled
                 }
             })
@@ -575,24 +582,39 @@ private struct DeviceCardsList: View {
             case .when:
                 ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { event in
                     PickRow(parts: event.needsThreshold
-                            ? [.t("\(device.kind == .humidity ? "Vochtigheid" : "Temperatuur") \(event.label) "), .a("Waarde")]
+                            ? [.t("\(device.measureName) \(event.label) "), .a("Waarde")]
                             : [.t(event.label.capitalizedFirst)]) {
                         var w = WhenCard(kind: .device)
                         w.deviceID = device.id
                         w.event = event
-                        w.threshold = device.kind == .humidity ? 60 : 21
+                        w.threshold = device.kind == .humidity ? 60 : (device.kind == .lux ? 30 : 21)
                         draft.when = w
                         done(.when)
                     }
                 }
             case .and:
-                ForEach([true, false], id: \.self) { on in
-                    PickRow(parts: [.t("Is "), .a(on ? device.stateWords.on : device.stateWords.off)]) {
-                        var card = AndCard(kind: .deviceState)
-                        card.deviceID = device.id
-                        card.deviceOn = on
-                        draft.ands.append(card)
-                        done(.and(card.id))
+                if device.hasSensorValue {
+                    ForEach([true, false], id: \.self) { below in
+                        PickRow(parts: [.t("\(device.measureName) is "), .a(below ? "onder" : "boven"), .t(" "), .a("Waarde")],
+                                popular: below && device.kind == .lux) {
+                            var card = AndCard(kind: .sensor)
+                            card.deviceID = device.id
+                            card.isBelow = below
+                            card.value = device.kind == .lux ? 30 : (device.kind == .humidity ? 60 : 20)
+                            draft.ands.append(card)
+                            done(.and(card.id))
+                        }
+                    }
+                }
+                if device.hasStateCondition {
+                    ForEach([true, false], id: \.self) { on in
+                        PickRow(parts: [.t("Is "), .a(on ? device.stateWords.on : device.stateWords.off)]) {
+                            var card = AndCard(kind: .deviceState)
+                            card.deviceID = device.id
+                            card.deviceOn = on
+                            draft.ands.append(card)
+                            done(.and(card.id))
+                        }
                     }
                 }
             case .then:

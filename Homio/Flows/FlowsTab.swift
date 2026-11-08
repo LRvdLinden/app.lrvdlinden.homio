@@ -156,7 +156,16 @@ struct FlowsTab: View {
                         d.when.kind = .device
                         d.when.deviceID = home.devices.first { $0.kind == .motion }?.id
                         d.when.event = .motion
-                        d.ands = [AndCard(kind: .night)]
+                        // Met een lichtsensor: alleen als het daar donker genoeg is; anders na zonsondergang.
+                        if let lux = home.devices.first(where: { $0.kind == .lux }) {
+                            var card = AndCard(kind: .sensor)
+                            card.deviceID = lux.id
+                            card.isBelow = true
+                            card.value = 30
+                            d.ands = [card]
+                        } else {
+                            d.ands = [AndCard(kind: .night)]
+                        }
                         if let light = home.devices.first(where: { $0.kind == .light }) {
                             d.thens = [ActionStep.defaults(for: light)]
                         }
