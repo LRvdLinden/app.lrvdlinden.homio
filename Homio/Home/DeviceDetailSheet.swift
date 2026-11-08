@@ -57,13 +57,20 @@ private struct DeviceControls: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            VStack(spacing: 6) {
-                DeviceIcon(device: device, size: 52)
-                    .foregroundStyle(device.isOn ? device.tint : Color.primary.opacity(0.7))
-                Text(device.stateText).font(.title2.weight(.semibold))
-                Text(device.roomName).foregroundStyle(Theme.textLight)
+            // Kop zoals het apparaatscherm van Homey.
+            VStack(spacing: 10) {
+                DeviceIcon(device: device, size: 40)
+                    .foregroundStyle(device.isOn && device.kind == .light ? Theme.yellow : Theme.text)
+                    .frame(width: 72, height: 72)
+                    .background(Circle().fill(device.isOn ? Theme.tileOn : Theme.tileOff)
+                        .shadow(color: .black.opacity(device.isOn ? 0.12 : 0), radius: 3, y: 2))
+                Text(device.name).font(HomeyFont.xlarge).foregroundStyle(Theme.text).multilineTextAlignment(.center)
+                Text("\(device.roomName) · \(device.stateText)")
+                    .font(HomeyFont.body)
+                    .foregroundStyle(Theme.textLight)
+                    .contentTransition(.numericText())
             }
-            .padding(.top, 24)
+            .padding(.top, 16)
 
             switch device.kind {
             case .light:
@@ -106,9 +113,10 @@ private struct PowerButton: View {
         } label: {
             Image(systemName: device.kind == .lock ? (device.isOn ? "lock.fill" : "lock.open.fill") : "power")
                 .font(.system(size: 54, weight: .medium))
-                .foregroundStyle(device.isOn ? Color.black : Color.primary)
+                .foregroundStyle(device.isOn ? Color.white : Theme.textLight)
                 .frame(width: 160, height: 160)
-                .background(Circle().fill(device.isOn ? AnyShapeStyle(device.tint) : AnyShapeStyle(Color.primary.opacity(0.12))))
+                .background(Circle().fill(device.isOn ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.card))
+                    .shadow(color: .black.opacity(0.12), radius: 6, y: 3))
         }
         .buttonStyle(PressableStyle())
         .sensoryFeedback(.impact(weight: .medium), trigger: device.isOn)
@@ -126,14 +134,15 @@ struct VerticalSlider: View {
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .bottom) {
-                Rectangle().fill(Color.primary.opacity(0.12))
-                Rectangle().fill(tint).frame(height: geo.size.height * value)
+                Rectangle().fill(Theme.tileOff)
+                Rectangle().fill(tint.gradient).frame(height: geo.size.height * value)
                 Image(systemName: symbol)
-                    .font(.title)
-                    .foregroundStyle(value > 0.15 ? Color.black.opacity(0.6) : Color.primary.opacity(0.8))
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(value > 0.15 ? Color.white : Theme.textLight)
                     .padding(.bottom, 22)
             }
-            .clipShape(RoundedRectangle(cornerRadius: 40, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 28, style: .continuous).strokeBorder(Theme.tileBorder, lineWidth: 1))
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
@@ -175,35 +184,78 @@ private struct PercentSlider: View {
     }
 }
 
+/// Lamp zoals in Homey: één grote bediening tegelijk, onderaan een rij om te wisselen
+/// tussen helderheid, kleur en aan/uit.
 private struct LightControls: View {
     let device: Device
     @EnvironmentObject private var home: HomeStore
     @State private var level: Double = 0
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @State private var tab = 0
+
+    private var hasDim: Bool { device.characteristic(HMCharacteristicTypeBrightness) != nil }
+    private var hasColor: Bool {
+        device.characteristic(HMCharacteristicTypeHue) != nil || device.characteristic(HMCharacteristicTypeColorTemperature) != nil
+    }
+
+    private var tabs: [(Int, String, String)] {
+        var list: [(Int, String, String)] = []
+        if hasDim { list.append((0, "sun.max.fill", "Helderheid")) }
+        if hasColor { list.append((1, "paintpalette.fill", "Kleur")) }
+        list.append((2, "power", "Aan/uit"))
+        return list
+    }
 
     var body: some View {
-        AdaptiveStack(spacing: sizeClass == .compact ? 24 : 40) {
-            VStack(spacing: 14) {
-                Text(level > 0 ? "\(Int(level * 100))%" : "Uit").font(.title.monospacedDigit())
-                VerticalSlider(value: $level, tint: Theme.amber, symbol: "lightbulb.fill") { v in
-                    let percent = Int((v * 100).rounded())
-                    if percent == 0 {
-                        home.write(device.characteristic(HMCharacteristicTypePowerState), false)
-                    } else {
-                        if !device.isOn { home.write(device.characteristic(HMCharacteristicTypePowerState), true) }
-                        home.write(device.characteristic(HMCharacteristicTypeBrightness), percent)
+        VStack(spacing: 28) {
+            Group {
+                switch tab {
+                case 0 where hasDim:
+                    VStack(spacing: 14) {
+                        Text(level > 0 ? "\(Int(level * 100))%" : "Uit")
+                            .font(.system(size: 34, weight: .bold).monospacedDigit())
+                            .foregroundStyle(Theme.text)
+                            .contentTransition(.numericText())
+                        VerticalSlider(value: $level, tint: Theme.yellow, symbol: "lightbulb.fill") { v in
+                            let percent = Int((v * 100).rounded())
+                            if percent == 0 {
+                                home.write(device.characteristic(HMCharacteristicTypePowerState), false)
+                            } else {
+                                if !device.isOn { home.write(device.characteristic(HMCharacteristicTypePowerState), true) }
+                                home.write(device.characteristic(HMCharacteristicTypeBrightness), percent)
+                            }
+                        }
                     }
+                case 1 where hasColor:
+                    LightColorPanel(device: device)
+                default:
+                    PowerButton(device: device)
                 }
             }
+            .frame(minHeight: 330)
+            .animation(.easeInOut(duration: 0.2), value: tab)
 
-            LightColorPanel(device: device)
+            if tabs.count > 1 {
+                HStack(spacing: 12) {
+                    ForEach(tabs.indices, id: \.self) { i in
+                        let item = tabs[i]
+                        Button { tab = item.0 } label: {
+                            Image(systemName: item.1)
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundStyle(tab == item.0 ? Color.white : Theme.textLight)
+                                .frame(width: 52, height: 52)
+                                .background(Circle().fill(tab == item.0 ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(Theme.card))
+                                    .shadow(color: .black.opacity(0.1), radius: 3, y: 2))
+                        }
+                        .buttonStyle(PressableStyle())
+                        .accessibilityLabel(item.2)
+                    }
+                }
+                .sensoryFeedback(.selection, trigger: tab)
+            }
         }
         .onAppear {
-            if device.isOn {
-                level = (device.brightness ?? 100) / 100
-            } else {
-                level = 0
-            }
+            level = device.isOn ? (device.brightness ?? 100) / 100 : 0
+            tab = hasDim ? 0 : 2
         }
     }
 }
@@ -227,11 +279,11 @@ private struct ThermostatControls: View {
             ZStack {
                 Circle()
                     .trim(from: 0.12, to: 0.88)
-                    .stroke(Color.primary.opacity(0.1), style: StrokeStyle(lineWidth: 22, lineCap: .round))
+                    .stroke(Theme.tileOff, style: StrokeStyle(lineWidth: 22, lineCap: .round))
                     .rotationEffect(.degrees(90))
                 Circle()
                     .trim(from: 0.12, to: 0.12 + 0.76 * fraction)
-                    .stroke(LinearGradient(colors: [.blue, .orange], startPoint: .leading, endPoint: .trailing),
+                    .stroke(LinearGradient(colors: [Theme.accent, Theme.orange], startPoint: .leading, endPoint: .trailing),
                             style: StrokeStyle(lineWidth: 22, lineCap: .round))
                     .rotationEffect(.degrees(90))
                 VStack(spacing: 4) {
@@ -277,7 +329,7 @@ private struct ThermostatControls: View {
             Image(systemName: symbol)
                 .font(.title.weight(.semibold))
                 .frame(width: 76, height: 76)
-                .background(Circle().fill(Color.primary.opacity(0.12)))
+                .background(Circle().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 3, y: 2))
         }
         .buttonStyle(PressableStyle())
         .foregroundStyle(.primary)

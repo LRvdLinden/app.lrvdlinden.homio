@@ -17,6 +17,8 @@ struct HomeTab: View {
     @State private var sceneToDelete: HMActionSet?
     @State private var showSearch = false
     @State private var showMatterAdd = false
+    @State private var zoneSheet: ZoneControlKind?
+    @EnvironmentObject private var history: HistoryStore
 
     enum Zone: Hashable {
         case favorites, all
@@ -33,6 +35,7 @@ struct HomeTab: View {
                         header
                         AttentionSection()
                         zonePicker
+                        zoneControls
                         scenesRow
                         if zone == .favorites || zone == .all {
                             GroupsSection(columns: columns)
@@ -95,6 +98,9 @@ struct HomeTab: View {
             .sheet(isPresented: $showMatterAdd) {
                 MatterAddView()
             }
+            .sheet(item: $zoneSheet) { kind in
+                ZoneControlSheet(kind: kind, devices: zoneDevices, zoneName: zoneTitle)
+            }
             .sheet(item: $sceneEdit) { target in
                 SceneEditorView(scene: target.scene)
             }
@@ -136,34 +142,62 @@ struct HomeTab: View {
         return base
     }
 
+    /// Kop zoals Homey: begroeting en een zin over het weer en het huis.
     private var header: some View {
         let s = home.summary
-        return VStack(alignment: .leading, spacing: 12) {
+        var parts: [String] = []
+        if let current = weather.current {
+            parts.append("Het is \(Int(current.temperature.rounded()))° en \(WeatherService.description(for: current.code).lowercased())")
+        }
+        if let t = s.temperature { parts.append("binnen \(t.oneDecimal)°") }
+        let sentence = parts.isEmpty ? "Welkom thuis" : parts.joined(separator: ", ") + "."
+        return VStack(alignment: .leading, spacing: 4) {
             Text(greeting)
-                .font(.title2.weight(.semibold))
-                .foregroundStyle(Color.primary.opacity(0.85))
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    if let current = weather.current {
-                        StatusChip(symbol: WeatherService.symbol(for: current.code, isDay: current.isDay),
-                                   text: "\(Int(current.temperature.rounded()))° buiten",
-                                   color: .white, multicolor: true)
-                    }
-                    if let t = s.temperature {
-                        StatusChip(symbol: "thermometer.medium", text: "\(t.oneDecimal)° binnen", color: IconPalette.orange)
-                    }
-                    StatusChip(symbol: "lightbulb.fill",
-                               text: s.lightsOn == 1 ? "1 lamp aan" : "\(s.lightsOn) lampen aan",
-                               color: IconPalette.yellow)
-                    if s.openLocks > 0 {
-                        StatusChip(symbol: "lock.open.fill",
-                                   text: s.openLocks == 1 ? "1 slot open" : "\(s.openLocks) sloten open",
-                                   color: IconPalette.blue)
-                    }
-                    if s.openContacts > 0 {
-                        StatusChip(symbol: "door.left.hand.open", text: "\(s.openContacts) open", color: .teal)
-                    }
+                .font(HomeyFont.xlarge)
+                .foregroundStyle(Theme.text)
+            HStack(spacing: 6) {
+                if let current = weather.current {
+                    Image(systemName: WeatherService.symbol(for: current.code, isDay: current.isDay))
+                        .symbolRenderingMode(.multicolor)
                 }
+                Text(sentence)
+            }
+            .font(HomeyFont.body)
+            .foregroundStyle(Theme.textLight)
+        }
+    }
+
+    // MARK: Zonebediening (Verlichting, Klimaat, Activiteit)
+
+    private var zoneDevices: [Device] {
+        switch zone {
+        case .room(let name): return home.devices.filter { $0.roomName == name }
+        default: return home.devices
+        }
+    }
+
+    private var zoneControls: some View {
+        let devices = zoneDevices
+        let lights = devices.filter { $0.kind == .light }
+        let lightsOn = lights.filter(\.isOn).count
+        let temps = devices.compactMap { [.temperature, .thermostat, .heaterCooler].contains($0.kind) ? $0.currentTemperature : nil }
+        let avg = temps.isEmpty ? nil : temps.reduce(0, +) / Double(temps.count)
+        let lastActivity = history.log.first { entry in
+            if case .room(let name) = zone { return entry.room == name }
+            return true
+        }
+        return HStack(spacing: 10) {
+            ZoneControlTile(title: "Verlichting", symbol: "lightbulb.fill", color: Theme.yellow,
+                            value: lights.isEmpty ? "Geen lampen" : (lightsOn == 0 ? "Alles uit" : "\(lightsOn) aan")) {
+                zoneSheet = .lights
+            }
+            ZoneControlTile(title: "Klimaat", symbol: "thermometer.medium", color: Theme.orange,
+                            value: avg.map { "\($0.oneDecimal)°" } ?? "–") {
+                zoneSheet = .climate
+            }
+            ZoneControlTile(title: "Activiteit", symbol: "waveform.path.ecg", color: Theme.accent,
+                            value: lastActivity.map { $0.date.formatted(.relative(presentation: .named)) } ?? "Rustig") {
+                zoneSheet = .activity
             }
         }
     }
@@ -308,6 +342,13 @@ struct HomeTab: View {
             } else {
                 Text("Deze kamer heeft geen apparaten.").foregroundStyle(Theme.textLight)
             }
+        }
+    }
+
+    private var zoneTitle: String {
+        switch zone {
+        case .favorites, .all: return home.home?.name ?? "Thuis"
+        case .room(let name): return name
         }
     }
 

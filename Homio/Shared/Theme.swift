@@ -15,6 +15,11 @@ enum Theme {
     static let tileOn = Color(light: 0xFFFFFF, dark: 0x3B3D4A)
     /// Haarlijn rond een tegel die uit staat (licht: zwart 5%, donker: mono_100).
     static let tileBorder = Color(lightRGBA: (0, 0, 0, 0.05), dark: 0x2B2C36)
+    /// Homey Insights: kaart, pillen, raster en gekozen segment.
+    static let insightsCard = Color(light: 0xFFFFFF, dark: 0x1C1D26)
+    static let insightsPill = Color(light: 0xF1F2F6, dark: 0x2A2B36)
+    static let insightsGrid = Color(light: 0xE3E5EC, dark: 0x3A3C4A)
+    static let insightsSelected = Color(light: 0xFFFFFF, dark: 0x3B3D4A)
     static let line = Color(light: 0xDADAE2, dark: 0x3B3D4A)              // mono_100 / mono_200
     static let lineLight = Color(light: 0xEAEAF1, dark: 0x2B2C36)         // mono_050 / mono_100
     static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)              // mono_900
@@ -122,11 +127,8 @@ struct GlassCard: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(Theme.card, in: RoundedRectangle(cornerRadius: corner, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: corner, style: .continuous)
-                    .strokeBorder(Theme.line, lineWidth: 1)
-            )
+            .background(RoundedRectangle(cornerRadius: corner, style: .continuous).fill(Theme.card)
+                .shadow(color: .black.opacity(0.12), radius: 3, y: 2))
     }
 }
 
@@ -218,7 +220,9 @@ struct SolidCard: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(RoundedRectangle(cornerRadius: corner, style: .continuous).fill(fill))
+            .background(RoundedRectangle(cornerRadius: corner, style: .continuous).fill(fill)
+                // Homey shadow.light: y 2, blur 3, 12% zwart.
+                .shadow(color: .black.opacity(0.12), radius: 3, y: 2))
     }
 }
 
@@ -246,3 +250,52 @@ struct GradientIcon: View {
             .accessibilityHidden(true)
     }
 }
+
+#if canImport(UIKit)
+/// Tabbalk en navigatiebalk zoals in de Homey-app: effen vlak, haarlijn, blauw voor de
+/// gekozen tab, grijze iconen, grote vette titels.
+enum HomeyChrome {
+    private static func dynamic(_ light: UInt32, _ dark: UInt32, alpha: CGFloat = 1) -> UIColor {
+        func c(_ hex: UInt32) -> UIColor {
+            UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
+                    blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
+        }
+        return UIColor { $0.userInterfaceStyle == .dark ? c(dark) : c(light) }
+    }
+
+    static func apply() {
+        let accent = UIColor(red: 0, green: 0x82 / 255, blue: 0xFA / 255, alpha: 1)
+        let unselected = dynamic(0x93939A, 0x80818E)
+
+        let item = UITabBarItemAppearance()
+        item.normal.iconColor = unselected
+        item.normal.titleTextAttributes = [.foregroundColor: unselected, .font: UIFont.systemFont(ofSize: 10, weight: .medium)]
+        item.selected.iconColor = accent
+        item.selected.titleTextAttributes = [.foregroundColor: accent, .font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
+
+        let tab = UITabBarAppearance()
+        tab.configureWithOpaqueBackground()
+        tab.backgroundColor = dynamic(0xFFFFFF, 0x111218)
+        tab.shadowColor = dynamic(0xDADAE2, 0x2B2C36)
+        tab.stackedLayoutAppearance = item
+        tab.inlineLayoutAppearance = item
+        tab.compactInlineLayoutAppearance = item
+        UITabBar.appearance().standardAppearance = tab
+        UITabBar.appearance().scrollEdgeAppearance = tab
+
+        let text = dynamic(0x1C1C1C, 0xE4E4E7)
+        let nav = UINavigationBarAppearance()
+        nav.configureWithTransparentBackground()
+        nav.backgroundColor = dynamic(0xF4F4FA, 0x111218)
+        nav.largeTitleTextAttributes = [.foregroundColor: text, .font: UIFont.systemFont(ofSize: 32, weight: .bold)]
+        nav.titleTextAttributes = [.foregroundColor: text, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
+        let scrolled = UINavigationBarAppearance()
+        scrolled.configureWithDefaultBackground()
+        scrolled.largeTitleTextAttributes = nav.largeTitleTextAttributes
+        scrolled.titleTextAttributes = nav.titleTextAttributes
+        UINavigationBar.appearance().scrollEdgeAppearance = nav
+        UINavigationBar.appearance().standardAppearance = scrolled
+        UINavigationBar.appearance().compactAppearance = scrolled
+    }
+}
+#endif

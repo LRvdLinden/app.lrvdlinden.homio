@@ -28,15 +28,15 @@ struct SettingsView: View {
                 Section {
                     if let startDisplay {
                         Button(action: startDisplay) {
-                            Label("Start weergavemodus", systemImage: "play.rectangle.fill")
+                            SettingsRowLabel("Start weergavemodus", symbol: "play.rectangle.fill", color: Theme.accent)
                         }
                     }
                     Toggle("Starten in weergavemodus", isOn: $settings.startInDisplayMode)
                     Button { showTimers = true } label: {
-                        Label("Timers", systemImage: "timer")
+                        SettingsRowLabel("Timers", symbol: "timer", color: Theme.orange)
                     }
                     Button { showCameras = true } label: {
-                        Label("Camera's", systemImage: "video.fill")
+                        SettingsRowLabel("Camera's", symbol: "video.fill", color: Color(red: 0.2, green: 0.2, blue: 0.25))
                     }
                 } header: {
                     Text("Weergavemodus")
@@ -67,7 +67,7 @@ struct SettingsView: View {
                     Button {
                         showAddProfile = true
                     } label: {
-                        Label("Profiel toevoegen", systemImage: "person.badge.plus")
+                        SettingsRowLabel("Profiel toevoegen", symbol: "person.badge.plus", color: Color(red: 0x9C / 255, green: 0x47 / 255, blue: 0xFC / 255))
                     }
                 }
 
@@ -75,7 +75,7 @@ struct SettingsView: View {
                     NavigationLink {
                         FacesSettingsView()
                     } label: {
-                        Label("Faces kiezen en ordenen", systemImage: "rectangle.stack")
+                        SettingsRowLabel("Faces kiezen en ordenen", symbol: "rectangle.stack", color: Theme.purple)
                     }
                 } header: {
                     Text("Faces")
@@ -100,7 +100,7 @@ struct SettingsView: View {
                 Section {
                     LabeledContent("Foto's in fotolijst", value: "\(photos.urls.count)")
                     PhotosPicker(selection: $picks, maxSelectionCount: 50, matching: .images) {
-                        Label("Foto's toevoegen", systemImage: "photo.badge.plus")
+                        SettingsRowLabel("Foto's toevoegen", symbol: "photo.badge.plus", color: Color(red: 0xF0 / 255, green: 0x16 / 255, blue: 0x85 / 255))
                     }
                     if !photos.urls.isEmpty {
                         Button("Alle foto's verwijderen", role: .destructive) { photos.removeAll() }
@@ -113,12 +113,12 @@ struct SettingsView: View {
                     NavigationLink {
                         CloudSyncSettingsView()
                     } label: {
-                        Label("iCloud-synchronisatie", systemImage: "icloud.fill")
+                        SettingsRowLabel("iCloud-synchronisatie", symbol: "icloud.fill", color: Color(red: 0x2F / 255, green: 0x8A / 255, blue: 0xF7 / 255))
                     }
                     NavigationLink {
                         NotificationSettingsView()
                     } label: {
-                        Label("Meldingen", systemImage: "bell.badge.fill")
+                        SettingsRowLabel("Meldingen", symbol: "bell.badge.fill", color: Color(red: 0xE0 / 255, green: 0xA8 / 255, blue: 0x00 / 255))
                     }
                 } header: {
                     Text("Meldingen")
@@ -128,7 +128,7 @@ struct SettingsView: View {
                     NavigationLink {
                         MatterSettingsView()
                     } label: {
-                        Label("Matter", systemImage: "dot.radiowaves.left.and.right")
+                        SettingsRowLabel("Matter", symbol: "dot.radiowaves.left.and.right", color: Color(red: 0x1D / 255, green: 0x91 / 255, blue: 0x91 / 255))
                     }
                 } footer: {
                     Text("Eigen Matter-netwerk naast Apple Woning, voor apparaten uit Google, Alexa, SmartThings of Homey.")
@@ -150,17 +150,17 @@ struct SettingsView: View {
                     Button {
                         home.addAccessory()
                     } label: {
-                        Label("HomeKit- of Matter-apparaat toevoegen", systemImage: "plus.circle")
+                        SettingsRowLabel("HomeKit- of Matter-apparaat toevoegen", symbol: "plus.circle", color: Theme.green)
                     }
                     NavigationLink {
                         RoomsManageView()
                     } label: {
-                        Label("Kamers", systemImage: "square.split.bottomrightquarter")
+                        SettingsRowLabel("Kamers", symbol: "square.split.bottomrightquarter", color: Color(red: 0x32 / 255, green: 0x33 / 255, blue: 0x34 / 255))
                     }
                     NavigationLink {
                         HealthView()
                     } label: {
-                        Label("Huiscontrole", systemImage: "stethoscope")
+                        SettingsRowLabel("Huiscontrole", symbol: "stethoscope", color: Theme.red)
                     }
                 }
 
@@ -175,7 +175,7 @@ struct SettingsView: View {
                             Text(option.label).tag(option)
                         }
                     } label: {
-                        Label("Thema", systemImage: "circle.lefthalf.filled")
+                        SettingsRowLabel("Thema", symbol: "circle.lefthalf.filled", color: Color(red: 0x75 / 255, green: 0x80 / 255, blue: 0xA6 / 255))
                     }
                     .pickerStyle(.segmented)
                 } header: {
@@ -186,10 +186,10 @@ struct SettingsView: View {
 
                 Section {
                     Button { showWhatsNew = true } label: {
-                        Label("Wat is nieuw", systemImage: "sparkles")
+                        SettingsRowLabel("Wat is nieuw", symbol: "sparkles", color: Theme.yellow)
                     }
                     Button { onboardingDone = false } label: {
-                        Label("Toon het welkomstscherm", systemImage: "hand.wave")
+                        SettingsRowLabel("Toon het welkomstscherm", symbol: "hand.wave", color: Theme.orange)
                     }
                 } header: {
                     Text("Over")
@@ -211,6 +211,8 @@ struct SettingsView: View {
                         .listRowBackground(Color.clear)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Theme.background)
             .navigationTitle("Meer")
             .sheet(isPresented: $showTimers) { TimersView() }
             .sheet(isPresented: $showCameras) { CamerasView() }
@@ -275,5 +277,30 @@ extension Bundle {
         let version = infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+}
+
+/// Rij-label zoals in Homey's Meer-scherm: wit icoon op een gekleurd afgerond vlak.
+struct SettingsRowLabel: View {
+    let title: LocalizedStringKey
+    let symbol: String
+    let color: Color
+
+    init(_ title: LocalizedStringKey, symbol: String, color: Color) {
+        self.title = title
+        self.symbol = symbol
+        self.color = color
+    }
+
+    var body: some View {
+        Label {
+            Text(title).foregroundStyle(Theme.text)
+        } icon: {
+            Image(systemName: symbol)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 30, height: 30)
+                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(color.gradient))
+        }
     }
 }

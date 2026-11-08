@@ -25,16 +25,17 @@ struct DashboardsTab: View {
                             DashboardGridView(dashboardID: dashboard.id, editing: editing)
                             if editing {
                                 Button { showPicker = true } label: {
-                                    Label("Widget toevoegen", systemImage: "plus")
-                                        .font(.headline)
-                                        .frame(maxWidth: .infinity, minHeight: 64)
+                                    Label("Widget toevoegen", systemImage: "plus.circle.fill")
+                                        .font(HomeyFont.smallMedium)
+                                        .frame(maxWidth: .infinity, minHeight: 56)
+                                        .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.accent.opacity(0.08)))
                                         .overlay(
                                             RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
-                                                .strokeBorder(Color.primary.opacity(0.25), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5]))
+                                                .strokeBorder(Theme.accent.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5, 4]))
                                         )
                                 }
                                 .buttonStyle(PressableStyle())
-                                .foregroundStyle(Color.primary.opacity(0.85))
+                                .foregroundStyle(Theme.accent)
                                 .transition(.opacity.combined(with: .move(edge: .bottom)))
                             }
                         } else {
@@ -46,7 +47,7 @@ struct DashboardsTab: View {
                             }
                         }
                     }
-                    .padding(.horizontal, sizeClass == .compact ? 16 : 28)
+                    .padding(.horizontal, sizeClass == .compact ? Theme.edge : Theme.edgeTablet)
                     .padding(.vertical, 12)
                 }
                 .scrollIndicators(.hidden)

@@ -21,6 +21,10 @@ struct HomioApp: App {
     @StateObject private var deviceIcons = DeviceIconStore.shared
     @AppStorage("appearance") private var appearance: AppearanceSetting = .system
 
+    init() {
+        HomeyChrome.apply()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
