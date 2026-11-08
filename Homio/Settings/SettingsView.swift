@@ -25,6 +25,42 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Profiel en woning bovenaan, zoals in de Homey-app.
+                Section {
+                    HStack(spacing: 14) {
+                        Text(verbatim: String((auth.displayName.isEmpty ? "H" : auth.displayName).prefix(1)).uppercased())
+                            .font(.system(size: 22, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 52, height: 52)
+                            .background(Circle().fill(Theme.blueGradient))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(auth.displayName.isEmpty ? "Homio" : auth.displayName)
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Theme.text)
+                            Text(settings.activeProfile.map { "Profiel: \($0.name)" } ?? "Ingelogd met Apple")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.textLight)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                    HStack(spacing: 14) {
+                        Image(systemName: "house.fill")
+                            .font(.system(size: 20))
+                            .foregroundStyle(.white)
+                            .frame(width: 52, height: 52)
+                            .background(Circle().fill(Theme.text))
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(home.home?.name ?? "Thuis")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(Theme.text)
+                            Text("\(home.devices.count) apparaten · \(home.rooms.count) kamers")
+                                .font(.system(size: 13))
+                                .foregroundStyle(Theme.textLight)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+
                 // Zoals Homey's Meer: inzichten, alarmen (timers), batterijen en gebruikers bovenaan.
                 Section {
                     NavigationLink {
@@ -313,8 +349,8 @@ struct SettingsRowLabel: View {
             Image(systemName: symbol)
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 30, height: 30)
-                .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(color.gradient))
+                .frame(width: 32, height: 32)
+                .background(Circle().fill(color))
         }
     }
 }

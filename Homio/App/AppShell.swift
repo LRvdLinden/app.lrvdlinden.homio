@@ -20,19 +20,19 @@ struct AppShell: View {
     var body: some View {
         TabView(selection: $tab) {
             HomeTab(startDisplay: startDisplay)
-                .tabItem { Label("Thuis", systemImage: "house.fill") }
+                .tabItem { Label("Home", systemImage: "house.fill") }
                 .tag(AppTab.home)
 
             DevicesTab(startDisplay: startDisplay)
-                .tabItem { Label("Apparaten", systemImage: "lightbulb.2.fill") }
+                .tabItem { Label("Apparaten", systemImage: "square.grid.2x2.fill") }
                 .tag(AppTab.devices)
 
             FlowsTab()
-                .tabItem { Label("Flows", systemImage: "arrow.triangle.branch") }
+                .tabItem { Label("Automatisering", systemImage: "arrow.triangle.branch") }
                 .tag(AppTab.flows)
 
             DashboardsTab(startDisplay: startDisplay)
-                .tabItem { Label("Dashboards", systemImage: "square.grid.2x2.fill") }
+                .tabItem { Label("Dashboards", systemImage: "rectangle.3.group.fill") }
                 .tag(AppTab.dashboards)
 
             SettingsView(showsDone: false, startDisplay: startDisplay)

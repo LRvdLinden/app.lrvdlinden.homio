@@ -32,8 +32,9 @@ struct DevicesTab: View {
             HomeStateGate {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        zonePicker
-                        zoneControls
+                        titleBar
+                        zoneCards
+                        moodsGrid
                         if zone == .all {
                             GroupsSection(columns: columns)
                         }
@@ -46,7 +47,8 @@ struct DevicesTab: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
-            .navigationTitle("Apparaten")
+            .navigationTitle(zoneTitle)
+            .toolbar(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: startDisplay) {
@@ -161,6 +163,132 @@ struct DevicesTab: View {
             }
             .font(HomeyFont.body)
             .foregroundStyle(Theme.textLight)
+        }
+    }
+
+    // MARK: Titel met zonekeuze, zoals "Thuis ▾" in Homey
+
+    private var titleBar: some View {
+        HStack(spacing: 10) {
+            Menu {
+                Button { zone = .all } label: { Label(home.home?.name ?? "Thuis", systemImage: "house.fill") }
+                ForEach(home.rooms) { room in
+                    Button { zone = .room(room.name) } label: { Text(room.name) }
+                }
+                ForEach(matterOnlyRooms, id: \.self) { name in
+                    Button { zone = .room(name) } label: { Text(name) }
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(zoneTitle)
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundStyle(Theme.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 15, weight: .heavy))
+                        .foregroundStyle(Theme.text)
+                }
+            }
+            Spacer()
+            Menu {
+                Button { showSearch = true } label: { Label("Zoeken", systemImage: "magnifyingglass") }
+                Button(action: startDisplay) { Label("Weergavemodus", systemImage: "play.rectangle.fill") }
+                if home.homes.count > 1 {
+                    Picker("Woning", selection: Binding(
+                        get: { home.home?.uniqueIdentifier },
+                        set: { home.selectedHomeID = $0 }
+                    )) {
+                        ForEach(home.homes, id: \.uniqueIdentifier) { h in
+                            Text(h.name).tag(Optional(h.uniqueIdentifier))
+                        }
+                    }
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(Theme.textMedium)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Theme.quickOff))
+            }
+            Menu {
+                Button { home.addAccessory() } label: {
+                    Label("Apparaat toevoegen (Apple Woning)", systemImage: "plus.circle")
+                }
+                Button { showMatterAdd = true } label: {
+                    Label("Matter-apparaat toevoegen (Homio)", systemImage: "dot.radiowaves.left.and.right")
+                }
+                Button { sceneEdit = SceneEditTarget(scene: nil) } label: {
+                    Label("Nieuwe mood", systemImage: "sparkles")
+                }
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 36, height: 36)
+                    .background(Circle().fill(Theme.accent))
+            }
+            .accessibilityLabel("Toevoegen")
+        }
+        .padding(.top, 8)
+    }
+
+    // MARK: Zonekaarten (Lampen, Activiteit, Klimaat, Batterijen …) in twee kolommen
+
+    private var zoneCards: some View {
+        let devices = zoneDevices
+        let lights = devices.filter { $0.kind == .light }
+        let lightsOn = lights.filter(\.isOn).count
+        let temps = devices.compactMap { [.temperature, .thermostat, .heaterCooler].contains($0.kind) ? $0.currentTemperature : nil }
+        let humid = devices.compactMap { $0.kind == .humidity ? $0.number(HMCharacteristicTypeCurrentRelativeHumidity) : nil }
+        let lowBattery = devices.filter(\.lowBattery).count
+        let lastActivity = history.log.first { entry in
+            if case .room(let name) = zone { return entry.room == name }
+            return true
+        }
+        var climate = temps.isEmpty ? "–" : "\((temps.reduce(0, +) / Double(temps.count)).oneDecimal)°"
+        if !humid.isEmpty { climate += " | \(Int(humid.reduce(0, +) / Double(humid.count)))%" }
+        return LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+            ZoneCard(title: "Lampen", symbol: "lightbulb.2.fill", color: Theme.yellow,
+                     value: lights.isEmpty ? "Geen lampen" : (lightsOn == 0 ? "Alles uit" : (lightsOn == 1 ? "1 staat aan" : "\(lightsOn) staan aan"))) {
+                zoneSheet = .lights
+            }
+            ZoneCard(title: "Activiteit", symbol: "figure.walk", color: Theme.accent,
+                     value: lastActivity.map { $0.date.formatted(.relative(presentation: .named)) } ?? "Rustig") {
+                zoneSheet = .activity
+            }
+            ZoneCard(title: "Klimaat", symbol: "thermometer.medium", color: Theme.orange, value: climate) {
+                zoneSheet = .climate
+            }
+            ZoneCard(title: "Batterijen", symbol: "battery.25percent", color: Theme.red,
+                     value: lowBattery == 0 ? "Alles in orde" : "\(lowBattery) bijna leeg") {
+                zoneSheet = .activity
+            }
+        }
+    }
+
+    // MARK: Moods in twee kolommen
+
+    @ViewBuilder
+    private var moodsGrid: some View {
+        if !home.scenes.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Moods").font(.system(size: 19, weight: .bold)).foregroundStyle(Theme.text)
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                    ForEach(home.scenes, id: \.uniqueIdentifier) { scene in
+                        MoodCard(name: scene.name, detail: scene.actions.count == 1 ? "1 apparaat" : "\(scene.actions.count) apparaten") {
+                            home.run(scene)
+                        }
+                        .contextMenu {
+                            Button { home.run(scene) } label: { Label("Starten", systemImage: "play.fill") }
+                            Button { sceneEdit = SceneEditTarget(scene: scene) } label: { Label("Bewerken", systemImage: "pencil") }
+                            if !scene.isBuiltIn {
+                                Button(role: .destructive) { sceneToDelete = scene } label: { Label("Verwijderen", systemImage: "trash") }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -284,7 +412,7 @@ struct DevicesTab: View {
     // MARK: Inhoud per zone
 
     private var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: compact ? 96 : 124, maximum: 160), spacing: Theme.gutter)]
+        [GridItem(.adaptive(minimum: compact ? 74 : 104, maximum: 140), spacing: Theme.gutter)]
     }
 
     @ViewBuilder
@@ -416,43 +544,28 @@ private struct RoomSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline, spacing: 12) {
-                Button {
-                    onOpen?()
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(room.name).font(HomeyFont.large.weight(.bold))
-                        if onOpen != nil {
-                            Image(systemName: "chevron.right").font(.subheadline.weight(.semibold)).foregroundStyle(Theme.textLight)
-                        }
+            // Kamerkop zoals Homey: icoon in een grijs vlak, naam, pijltje.
+            Button {
+                onOpen?()
+            } label: {
+                HStack(spacing: 10) {
+                    Image(systemName: RoomIcon.symbol(for: room.name))
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(Theme.text)
+                        .frame(width: 26, height: 26)
+                        .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Theme.tileOff))
+                    Text(room.name)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(Theme.text)
+                    if onOpen != nil {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(Theme.iconLight)
                     }
-                }
-                .buttonStyle(.plain)
-                .disabled(onOpen == nil)
-
-                if let t = temperature {
-                    Label("\(t.oneDecimal)°", systemImage: "thermometer.medium")
-                        .font(.subheadline)
-                        .foregroundStyle(IconPalette.orange)
-                }
-                if let h = humidity {
-                    Label("\(Int(h))%", systemImage: "humidity.fill")
-                        .font(.subheadline)
-                        .foregroundStyle(.cyan)
-                }
-                Spacer()
-                if hasLights {
-                    Button {
-                        home.setLights(on: lightsOn == 0, room: room.name)
-                    } label: {
-                        Label(lightsOn == 0 ? "Lampen aan" : "Lampen uit",
-                              systemImage: lightsOn == 0 ? "lightbulb.fill" : "lightbulb.slash")
-                            .font(.subheadline.weight(.semibold))
-                    }
-                    .buttonStyle(.bordered)
-                    .tint(IconPalette.yellow)
                 }
             }
+            .buttonStyle(.plain)
+            .disabled(onOpen == nil)
             LazyVGrid(columns: columns, spacing: Theme.gutter) {
                 ForEach(room.devices) { DeviceTile(device: $0) }
                 ForEach(matterDevices) { MatterTile(endpoint: $0) }

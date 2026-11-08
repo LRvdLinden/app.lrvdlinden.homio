@@ -34,7 +34,7 @@ struct FlowsTab: View {
                         if !favorites.isEmpty && query.isEmpty {
                             VStack(alignment: .leading, spacing: 10) {
                                 SectionHeading(title: "Favoriete flows", subtitle: nil)
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
+                                LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                                     ForEach(favorites, id: \.uniqueIdentifier) { trigger in
                                         FlowPill(trigger: trigger)
                                     }
@@ -67,7 +67,7 @@ struct FlowsTab: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
-            .navigationTitle("Flows")
+            .navigationTitle("Automatisering")
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { editing = FlowEditTarget(draft: FlowDraft(), trigger: nil) } label: {
@@ -273,7 +273,7 @@ struct FlowRunButton: View {
                 .foregroundStyle(.white)
                 .offset(x: size * 0.03)
                 .frame(width: size, height: size)
-                .background(Circle().fill(trigger.isEnabled ? AnyShapeStyle(Theme.blueGradient) : AnyShapeStyle(Theme.textLight)))
+                .background(Circle().fill(trigger.isEnabled ? AnyShapeStyle(Theme.green) : AnyShapeStyle(Theme.iconLight)))
                 .symbolEffect(.bounce, value: ran)
         }
         .buttonStyle(PressableStyle())
@@ -295,9 +295,11 @@ private struct FlowPill: View {
                 .lineLimit(1)
             Spacer(minLength: 4)
         }
-        .padding(4)
-        .frame(height: 40)
-        .background(Capsule().fill(Theme.card).shadow(color: .black.opacity(0.12), radius: 3, y: 2))
+        .padding(.horizontal, 8)
+        .frame(height: 48)
+        .background(RoundedRectangle(cornerRadius: 14, style: .continuous).fill(Theme.card)
+            .shadow(color: .black.opacity(0.06), radius: 2, y: 1))
+        .opacity(trigger.isEnabled ? 1 : 0.45)
     }
 }
 

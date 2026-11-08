@@ -129,8 +129,7 @@ struct FlowEditorView: View {
     private func block<Content: View>(_ type: FlowCardType, @ViewBuilder content: () -> Content) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(type.heading).font(HomeyFont.large.weight(.bold))
-                Text(type.question).font(HomeyFont.small).foregroundStyle(Theme.textLight)
+                Text(type.heading).font(.system(size: 17, weight: .bold)).foregroundStyle(Theme.text)
             }
             content()
         }

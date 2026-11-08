@@ -52,10 +52,11 @@ struct TileModel {
     var alarm: Bool { kind.isAlarm && isOn }
 }
 
-/// Apparaattegel zoals in de Homey-app: vierkant, icoon linksboven (1/3 van de breedte),
-/// waarde rechtsboven, naam linksonder. Tik = snelle actie (zacht tikje), lang drukken =
-/// apparaat openen (stevige tik), contextmenu met extra snelle acties.
-/// Uit = component_off met haarlijn, aan = component_on met lichte schaduw.
+/// Apparaattegel zoals in de Homey-app (nagemeten uit de app zelf):
+/// vierkant, lijn-icoon linksboven, rond snelle-actieknopje rechtsboven (grijs bij uit,
+/// lichtblauw met blauw icoon bij aan), naam en daaronder status of waarde.
+/// Uit = grijs vlak, aan of sensor = wit vlak. Tik op de tegel = openen, tik op het
+/// knopje = snelle actie, lang drukken = menu.
 struct TileFace<Menu: View>: View {
     let model: TileModel
     var minHeight: CGFloat = 0
@@ -64,15 +65,14 @@ struct TileFace<Menu: View>: View {
     let onOpen: () -> Void
     @ViewBuilder let menu: () -> Menu
 
-    @State private var pressing = false
     @State private var tapped = 0
     @State private var opened = 0
 
     var body: some View {
         GeometryReader { geo in
             let side = fillsHeight ? min(geo.size.width, geo.size.height) : geo.size.width
-            let unit = max(0.8, min(1.4, side / 108))
-            content(unit: unit, side: side)
+            let unit = max(0.75, min(1.5, side / 84))
+            content(unit: unit)
                 .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
         .aspectRatio(fillsHeight ? nil : 1, contentMode: .fit)
@@ -80,107 +80,109 @@ struct TileFace<Menu: View>: View {
         .background {
             RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
                 .fill(model.lit ? Theme.tileOn : Theme.tileOff)
-                .overlay {
-                    if !model.lit {
-                        RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                            .strokeBorder(Theme.tileBorder, lineWidth: 1 / UIScreen.main.scale)
-                    }
-                }
-                .shadow(color: .black.opacity(model.lit ? 0.12 : 0), radius: 3, y: 2)
+                .shadow(color: .black.opacity(model.lit ? 0.08 : 0), radius: 3, y: 1)
         }
-        .opacity(model.isReachable ? 1 : 0.55)
-        .scaleEffect(pressing ? 0.96 : 1)
-        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressing)
-        .animation(.easeInOut(duration: 0.2), value: model.lit)
+        .opacity(model.isReachable ? 1 : 0.85)
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
         .onTapGesture {
-            if model.isToggleable && model.isReachable {
-                tapped += 1
-                onTap()
-            } else {
-                opened += 1
-                onOpen()
-            }
-        }
-        .onLongPressGesture(minimumDuration: 0.4, perform: {
             opened += 1
             onOpen()
-        }, onPressingChanged: { isPressing in
-            pressing = isPressing
-        })
+        }
         .contextMenu { menu() }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: tapped)
         .sensoryFeedback(.impact(weight: .medium), trigger: opened)
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(model.name), \(model.accessibilityValue)")
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(model.isToggleable ? "Tik om te schakelen, houd vast voor meer" : "Tik voor details")
     }
 
-    private func content(unit: CGFloat, side: CGFloat) -> some View {
+    private func content(unit: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 4) {
-                DeviceIcon(key: model.iconKey, fallback: model.iconName, size: 36 * unit)
-                    .foregroundStyle(iconColor)
-                    .opacity(model.lit ? 1 : 0.7)
+            HStack(alignment: .top, spacing: 0) {
+                DeviceIcon(key: model.iconKey, fallback: model.iconName, size: 30 * unit)
+                    .foregroundStyle(model.isReachable ? Theme.text : Theme.textLight)
                     .symbolEffect(.bounce, value: tapped)
-                Spacer(minLength: 0)
-                indicator(unit: unit, side: side)
-            }
-            Spacer(minLength: 4)
-            HStack(alignment: .lastTextBaseline, spacing: 4) {
-                Text(model.name)
-                    .font(.system(size: (14 * unit).rounded(), weight: .medium))
-                    .lineSpacing(3 * unit)
-                    .foregroundStyle(model.lit ? Theme.text : Theme.textMedium)
-                    .lineLimit(fillsHeight && side > 160 ? 3 : 2)
-                    .multilineTextAlignment(.leading)
-                    .minimumScaleFactor(0.85)
-                if model.viaMatter {
-                    Spacer(minLength: 0)
-                    Text(verbatim: "M")
-                        .font(.system(size: 9 * unit, weight: .heavy))
-                        .foregroundStyle(Theme.textLight)
-                        .padding(.horizontal, 3)
-                        .overlay(RoundedRectangle(cornerRadius: 3).stroke(Theme.textLight.opacity(0.6), lineWidth: 0.75))
-                        .accessibilityHidden(true)
+                Spacer(minLength: 2)
+                if model.isToggleable && model.isReachable {
+                    quickButton(unit: unit)
                 }
             }
+            Spacer(minLength: 2)
+            Text(model.name)
+                .font(.system(size: (11.5 * unit).rounded(), weight: .regular))
+                .foregroundStyle(Theme.text)
+                .lineLimit(2)
+                .multilineTextAlignment(.leading)
+                .minimumScaleFactor(0.85)
+            status(unit: unit)
+                .padding(.top, 1)
         }
-        .padding(Theme.tilePadding * min(unit, 1.2))
+        .padding(8 * unit)
     }
 
-    private var iconColor: Color {
-        if !model.isReachable { return Theme.textLight }
-        if model.lit && model.kind == .light { return Theme.yellow }
-        return model.lit ? Theme.text : Theme.textLight
+    /// Rond knopje rechtsboven, zoals de snelle actie in Homey.
+    private func quickButton(unit: CGFloat) -> some View {
+        Button {
+            tapped += 1
+            onTap()
+        } label: {
+            Image(systemName: quickSymbol)
+                .font(.system(size: 13 * unit, weight: .semibold))
+                .foregroundStyle(model.isOn ? Theme.accent : Theme.textMedium)
+                .frame(width: 26 * unit, height: 26 * unit)
+                .background(Circle().fill(model.isOn ? Theme.quickOn : Theme.quickOff))
+                .contentTransition(.symbolEffect(.replace))
+        }
+        .buttonStyle(PressableStyle())
+        .accessibilityLabel(model.isOn ? "Uitzetten" : "Aanzetten")
     }
 
-    /// Rechtsboven: alarm, geen reactie, batterij of de belangrijkste waarde.
+    private var quickSymbol: String {
+        switch model.kind {
+        case .lock: return model.isOn ? "lock.fill" : "lock.open"
+        case .blinds, .window, .door, .garage: return model.isOn ? "chevron.down" : "chevron.up"
+        case .speaker, .tv, .vacuum: return model.isOn ? "pause.fill" : "play.fill"
+        default: return "power"
+        }
+    }
+
+    /// Regel onder de naam: geen reactie (rood), alarm, batterij, waarde of aan/uit.
     @ViewBuilder
-    private func indicator(unit: CGFloat, side: CGFloat) -> some View {
-        if model.alarm {
-            Text(verbatim: "!")
-                .font(.system(size: 15 * unit, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: side * 0.24, height: side * 0.24)
-                .background(Circle().fill(Theme.red))
-        } else if !model.isReachable {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.system(size: 14 * unit, weight: .semibold))
-                .foregroundStyle(Theme.orange)
-        } else if model.lowBattery {
-            Image(systemName: "battery.25percent")
-                .font(.system(size: 15 * unit, weight: .semibold))
+    private func status(unit: CGFloat) -> some View {
+        let font = Font.system(size: (10 * unit).rounded())
+        if !model.isReachable {
+            Label("Geen reactie", systemImage: "exclamationmark.triangle.fill")
+                .labelStyle(TightLabel())
+                .font(font)
                 .foregroundStyle(Theme.red)
+                .lineLimit(1)
+        } else if model.alarm {
+            Label(model.accessibilityValue, systemImage: "exclamationmark.octagon.fill")
+                .labelStyle(TightLabel())
+                .font(font.weight(.semibold))
+                .foregroundStyle(Theme.red)
+                .lineLimit(1)
+        } else if model.lowBattery {
+            Label("Batterij bijna leeg", systemImage: "battery.25percent")
+                .labelStyle(TightLabel())
+                .font(font)
+                .foregroundStyle(Theme.orange)
+                .lineLimit(1)
         } else if let value = model.indicator {
-            Text(value)
-                .font(.system(size: (13 * unit).rounded(), weight: .medium))
-                .foregroundStyle(model.lit ? Theme.textMedium : Theme.textLight)
-                .multilineTextAlignment(.trailing)
-                .lineLimit(3)
+            Text(value).font(font).foregroundStyle(Theme.textLight).lineLimit(1)
                 .contentTransition(.numericText())
-                .frame(maxWidth: side * 0.56, alignment: .topTrailing)
+        } else if model.isToggleable {
+            Text(model.isOn ? "Aan" : "Uit").font(font).foregroundStyle(Theme.textLight)
+        }
+    }
+}
+
+/// Icoon en tekst dicht op elkaar (voor de statusregel van een tegel).
+struct TightLabel: LabelStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: 3) {
+            configuration.icon
+            configuration.title
         }
     }
 }
@@ -246,6 +248,8 @@ struct QuickActionsMenu: View {
     @EnvironmentObject private var home: HomeStore
 
     var body: some View {
+        Button { showDetail = true } label: { Label("Openen", systemImage: "arrow.up.forward.square") }
+        Divider()
         switch device.kind {
         case .light:
             Button { home.set(device, on: true) } label: { Label("Aan", systemImage: "lightbulb.fill") }

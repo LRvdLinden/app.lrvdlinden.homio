@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Tegel voor een groep, in dezelfde vorm als een apparaattegel.
-/// Tik = alles aan/uit, lang drukken = details.
+/// Tegel voor een groep, in dezelfde vorm als een apparaattegel (Homey-opbouw):
+/// tik = openen, rond knopje = alles aan/uit.
 struct GroupTile: View {
     let group: DeviceGroup
     var minHeight: CGFloat = 0
@@ -9,7 +9,6 @@ struct GroupTile: View {
 
     @EnvironmentObject private var home: HomeStore
     @State private var showDetail = false
-    @State private var pressing = false
     @State private var tapped = 0
 
     var body: some View {
@@ -17,29 +16,38 @@ struct GroupTile: View {
         let on = state.isOn
         GeometryReader { geo in
             let side = fillsHeight ? min(geo.size.width, geo.size.height) : geo.size.width
-            let unit = max(0.8, min(1.4, side / 108))
+            let unit = max(0.75, min(1.5, side / 84))
             VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top) {
+                HStack(alignment: .top, spacing: 0) {
                     Image(systemName: group.symbol)
-                        .font(.system(size: 26 * unit, weight: .regular))
-                        .foregroundStyle(on ? Theme.yellow : Theme.textLight)
-                        .frame(width: 36 * unit, height: 36 * unit, alignment: .topLeading)
-                    Spacer(minLength: 0)
-                    Text(verbatim: "\(state.members.count)")
-                        .font(.system(size: (12 * unit).rounded(), weight: .bold))
-                        .foregroundStyle(Theme.textMedium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(Capsule().fill(Theme.pill))
+                        .font(.system(size: 22 * unit, weight: .light))
+                        .foregroundStyle(Theme.text)
+                        .frame(width: 30 * unit, height: 30 * unit, alignment: .topLeading)
+                    Spacer(minLength: 2)
+                    Button {
+                        state.toggle(home)
+                        tapped += 1
+                    } label: {
+                        Image(systemName: "power")
+                            .font(.system(size: 13 * unit, weight: .semibold))
+                            .foregroundStyle(on ? Theme.accent : Theme.textMedium)
+                            .frame(width: 26 * unit, height: 26 * unit)
+                            .background(Circle().fill(on ? Theme.quickOn : Theme.quickOff))
+                    }
+                    .buttonStyle(PressableStyle())
                 }
-                Spacer(minLength: 4)
+                Spacer(minLength: 2)
                 Text(group.name)
-                    .font(.system(size: (14 * unit).rounded(), weight: .medium))
-                    .foregroundStyle(on ? Theme.text : Theme.textMedium)
+                    .font(.system(size: (11.5 * unit).rounded()))
+                    .foregroundStyle(Theme.text)
                     .lineLimit(2)
                     .minimumScaleFactor(0.85)
+                Text(state.stateText)
+                    .font(.system(size: (10 * unit).rounded()))
+                    .foregroundStyle(Theme.textLight)
+                    .lineLimit(1)
             }
-            .padding(Theme.tilePadding * min(unit, 1.2))
+            .padding(8 * unit)
             .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
         }
         .aspectRatio(fillsHeight ? nil : 1, contentMode: .fit)
@@ -47,32 +55,16 @@ struct GroupTile: View {
         .background {
             RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
                 .fill(on ? Theme.tileOn : Theme.tileOff)
-                .overlay {
-                    if !on {
-                        RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                            .strokeBorder(Theme.tileBorder, lineWidth: 1 / UIScreen.main.scale)
-                    }
-                }
-                .shadow(color: .black.opacity(on ? 0.12 : 0), radius: 3, y: 2)
+                .shadow(color: .black.opacity(on ? 0.08 : 0), radius: 3, y: 1)
         }
-        .scaleEffect(pressing ? 0.96 : 1)
-        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: pressing)
-        .animation(.easeInOut(duration: 0.2), value: on)
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
-        .onTapGesture {
-            state.toggle(home)
-            tapped += 1
-        }
-        .onLongPressGesture(minimumDuration: 0.4, perform: {
-            showDetail = true
-        }, onPressingChanged: { pressing = $0 })
+        .onTapGesture { showDetail = true }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: tapped)
         .sheet(isPresented: $showDetail) {
             GroupDetailSheet(groupID: group.id)
         }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: .contain)
         .accessibilityLabel("\(group.name), \(state.stateText)")
-        .accessibilityAddTraits(.isButton)
     }
 }
 
@@ -148,7 +140,7 @@ struct GroupDetailSheet: View {
                     .card()
                 }
 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 96, maximum: 160), spacing: Theme.gutter)], spacing: Theme.gutter) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 74, maximum: 140), spacing: Theme.gutter)], spacing: Theme.gutter) {
                     ForEach(state.members) { DeviceTile(device: $0) }
                 }
             }

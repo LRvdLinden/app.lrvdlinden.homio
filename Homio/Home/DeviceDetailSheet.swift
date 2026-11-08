@@ -1,54 +1,379 @@
 import HomeKit
 import SwiftUI
 
+/// Apparaatscherm zoals in de Homey-app: schermvullend, achtergrond in de kleur van het
+/// licht (of donker als het uit staat), ronde knoppen bovenaan (sluiten, favoriet,
+/// instellingen) en onderaan een iconenbalk: bediening, helderheid, kleur, inzichten,
+/// tijdlijn en flows.
 struct DeviceDetailSheet: View {
     let deviceID: UUID
 
     @EnvironmentObject private var home: HomeStore
     @EnvironmentObject private var settings: SettingsStore
     @Environment(\.dismiss) private var dismiss
+    @State private var tab: DeviceTab = .control
 
     var body: some View {
         NavigationStack {
-            Group {
+            ZStack {
                 if let device = home.device(id: deviceID) {
-                    ScrollView {
-                        DeviceControls(device: device)
+                    DeviceBackdrop(device: device).ignoresSafeArea()
+                    VStack(spacing: 0) {
+                        topBar(device)
+                        Spacer(minLength: 12)
+                        panel(device)
+                            .frame(maxWidth: .infinity)
+                            .transition(.opacity)
+                            .id(tab)
+                        Spacer(minLength: 12)
+                        tabBar(device)
+                            .padding(.bottom, 18)
                     }
-                    .scrollBounceBehavior(.basedOnSize)
+                    .padding(.horizontal, Theme.edge)
+                    .animation(.easeInOut(duration: 0.2), value: tab)
                 } else {
                     ContentUnavailableView("Apparaat niet gevonden", systemImage: "questionmark.circle")
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Theme.background)
-            .navigationTitle(home.device(id: deviceID)?.name ?? "")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        settings.toggleFavorite(deviceID)
-                    } label: {
-                        Image(systemName: settings.isFavorite(deviceID) ? "star.fill" : "star")
-                    }
-                    .accessibilityLabel(settings.isFavorite(deviceID) ? "Uit favorieten" : "Aan favorieten")
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Gereed") { dismiss() }
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    NavigationLink {
-                        DeviceManageView(deviceID: deviceID)
-                    } label: {
-                        Image(systemName: "gearshape")
-                    }
-                    .accessibilityLabel("Beheren")
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
+            .environment(\.colorScheme, .dark)
         }
         .presentationDetents([.large])
-        .presentationBackground(Theme.background)
+        .presentationCornerRadius(28)
+        .onAppear {
+            if let d = home.device(id: deviceID), d.kind == .light,
+               d.characteristic(HMCharacteristicTypeBrightness) != nil {
+                tab = .dim
+            }
+        }
     }
+
+    // MARK: Bovenbalk
+
+    private func topBar(_ device: Device) -> some View {
+        HStack {
+            circleButton("chevron.down") { dismiss() }
+                .accessibilityLabel("Sluiten")
+            Spacer()
+            Text(device.name)
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
+            Spacer()
+            circleButton(settings.isFavorite(deviceID) ? "heart.fill" : "heart") {
+                settings.toggleFavorite(deviceID)
+            }
+            .accessibilityLabel(settings.isFavorite(deviceID) ? "Uit favorieten" : "Aan favorieten")
+            NavigationLink {
+                DeviceManageView(deviceID: deviceID)
+                    .environment(\.colorScheme, .light)
+            } label: {
+                circleLabel("gearshape.fill")
+            }
+            .accessibilityLabel("Instellingen")
+        }
+        .padding(.top, 14)
+    }
+
+    private func circleButton(_ symbol: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) { circleLabel(symbol) }
+            .buttonStyle(PressableStyle())
+    }
+
+    private func circleLabel(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15, weight: .bold))
+            .foregroundStyle(.white)
+            .frame(width: 36, height: 36)
+            .background(Circle().fill(.white.opacity(0.18)))
+    }
+
+    // MARK: Iconenbalk onderaan
+
+    private func tabs(for device: Device) -> [DeviceTab] {
+        var list: [DeviceTab] = []
+        if device.isToggleable || !device.kind.isSensor { list.append(.control) }
+        if device.kind == .light, device.characteristic(HMCharacteristicTypeBrightness) != nil { list.append(.dim) }
+        if device.kind == .light,
+           device.characteristic(HMCharacteristicTypeHue) != nil || device.characteristic(HMCharacteristicTypeColorTemperature) != nil {
+            list.append(.color)
+        }
+        if device.kind.isSensor { list.insert(.control, at: 0) }
+        list.append(contentsOf: [.insights, .timeline, .flows])
+        return list
+    }
+
+    private func tabBar(_ device: Device) -> some View {
+        HStack(spacing: 22) {
+            ForEach(tabs(for: device), id: \.self) { t in
+                Button { tab = t } label: {
+                    Image(systemName: t.symbol)
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundStyle(.white.opacity(tab == t ? 1 : 0.45))
+                        .frame(width: 34, height: 34)
+                }
+                .accessibilityLabel(t.title)
+            }
+        }
+        .sensoryFeedback(.selection, trigger: tab)
+    }
+
+    // MARK: Inhoud per tab
+
+    @ViewBuilder
+    private func panel(_ device: Device) -> some View {
+        switch tab {
+        case .control:
+            DeviceControls(device: device)
+        case .dim:
+            HomeyDimSlider(device: device)
+        case .color:
+            LightColorPanel(device: device)
+        case .insights:
+            DeviceInsightsPanel(device: device)
+        case .timeline:
+            DeviceTimelinePanel(device: device)
+        case .flows:
+            DeviceFlowsPanel(device: device)
+        }
+    }
+}
+
+enum DeviceTab: Hashable {
+    case control, dim, color, insights, timeline, flows
+
+    var symbol: String {
+        switch self {
+        case .control: return "switch.2"
+        case .dim: return "slider.horizontal.below.sun.max"
+        case .color: return "paintpalette.fill"
+        case .insights: return "chart.bar.fill"
+        case .timeline: return "clock.fill"
+        case .flows: return "arrow.triangle.branch"
+        }
+    }
+
+    var title: String {
+        switch self {
+        case .control: return "Bediening"
+        case .dim: return "Helderheid"
+        case .color: return "Kleur"
+        case .insights: return "Inzichten"
+        case .timeline: return "Tijdlijn"
+        case .flows: return "Flows"
+        }
+    }
+}
+
+/// Achtergrond in de kleur van het apparaat, zoals Homey: warm goud voor een lamp die aan
+/// staat (of de lampkleur), donkergrijs als hij uit staat, blauwgrijs voor andere apparaten.
+struct DeviceBackdrop: View {
+    let device: Device
+
+    var body: some View {
+        let top: Color
+        if device.kind == .light && device.isOn {
+            if let hue = device.number(HMCharacteristicTypeHue), let sat = device.number(HMCharacteristicTypeSaturation), sat > 15 {
+                top = Color(hue: hue / 360, saturation: min(0.75, sat / 100), brightness: 0.62)
+            } else {
+                top = Color(red: 0x8A / 255, green: 0x72 / 255, blue: 0x33 / 255)
+            }
+        } else if device.isOn && !device.kind.isSensor {
+            top = Color(red: 0x2C / 255, green: 0x55 / 255, blue: 0x8C / 255)
+        } else {
+            top = Color(red: 0x3B / 255, green: 0x3D / 255, blue: 0x4A / 255)
+        }
+        return LinearGradient(colors: [top, Self.darker(top, by: 0.6)], startPoint: .top, endPoint: .bottom)
+            .animation(.easeInOut(duration: 0.4), value: device.isOn)
+    }
+}
+
+extension DeviceBackdrop {
+    /// Kleur richting zwart schuiven (werkt ook op iOS 17, zonder Color.mix).
+    static func darker(_ color: Color, by amount: CGFloat) -> Color {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
+        let k = 1 - amount
+        return Color(red: r * k, green: g * k, blue: b * k)
+    }
+}
+
+/// Dimmer zoals Homey: doorzichtige baan, witte vulling met een marge, zonnetjes erboven en
+/// eronder, en een procent-bubbel tijdens het slepen.
+struct HomeyDimSlider: View {
+    let device: Device
+    @EnvironmentObject private var home: HomeStore
+    @State private var value: Double = 0
+    @State private var dragging = false
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "sun.max.fill").font(.title2).foregroundStyle(.white)
+            GeometryReader { geo in
+                let h = geo.size.height
+                ZStack(alignment: .bottom) {
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(.white.opacity(0.2))
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(.white)
+                        .frame(height: max(0, (h - 12) * value))
+                        .padding(6)
+                        .opacity(value > 0.005 ? 1 : 0)
+                }
+                .overlay(alignment: .topLeading) {
+                    if dragging {
+                        Text("\(Int((value * 100).rounded()))%")
+                            .font(.system(size: 13, weight: .bold).monospacedDigit())
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 7)
+                            .background(RoundedRectangle(cornerRadius: 9).fill(.white.opacity(0.25)))
+                            .offset(x: -64, y: max(0, min(h - 30, h - (h - 12) * value - 15)))
+                    }
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { g in
+                            dragging = true
+                            value = min(1, max(0, 1 - g.location.y / h))
+                        }
+                        .onEnded { _ in
+                            dragging = false
+                            commit()
+                        }
+                )
+            }
+            .frame(width: 96, height: 330)
+            Image(systemName: "sun.min").font(.title2).foregroundStyle(.white)
+        }
+        .sensoryFeedback(.selection, trigger: Int(value * 10))
+        .onAppear { value = device.isOn ? (device.brightness ?? 100) / 100 : 0 }
+        .accessibilityElement()
+        .accessibilityLabel("Helderheid")
+        .accessibilityValue("\(Int(value * 100)) procent")
+        .accessibilityAdjustableAction { direction in
+            value = min(1, max(0, value + (direction == .increment ? 0.1 : -0.1)))
+            commit()
+        }
+    }
+
+    private func commit() {
+        let percent = Int((value * 100).rounded())
+        if percent == 0 {
+            home.write(device.characteristic(HMCharacteristicTypePowerState), false)
+        } else {
+            if !device.isOn { home.write(device.characteristic(HMCharacteristicTypePowerState), true) }
+            home.write(device.characteristic(HMCharacteristicTypeBrightness), percent)
+        }
+    }
+}
+
+/// Inzichten van dit apparaat (de metingen die Homio bijhoudt).
+private struct DeviceInsightsPanel: View {
+    let device: Device
+    @EnvironmentObject private var history: HistoryStore
+
+    var body: some View {
+        let metrics = history.sortedMetrics.filter { $0.deviceID == device.id }
+        if let metric = metrics.first {
+            InsightsCard(metric: metric, metrics: metrics) { _ in }
+                .environment(\.colorScheme, .light)
+        } else {
+            emptyText("Nog geen inzichten", "Homio meet dit apparaat zodra er waarden binnenkomen.")
+        }
+    }
+}
+
+/// Wat er met dit apparaat gebeurde, zoals de tijdlijn in Homey.
+private struct DeviceTimelinePanel: View {
+    let device: Device
+    @EnvironmentObject private var history: HistoryStore
+
+    var body: some View {
+        let entries = Array(history.log.filter { $0.title == device.name }.prefix(12))
+        if entries.isEmpty {
+            emptyText("Nog niets gebeurd", "Hier zie je wanneer dit apparaat aan of uit ging.")
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(entries.indices, id: \.self) { i in
+                        let e = entries[i]
+                        HStack(alignment: .top, spacing: 14) {
+                            DeviceIcon(device: device, size: 18)
+                                .foregroundStyle(.white)
+                                .frame(width: 32, height: 32)
+                                .background(Circle().fill(.white.opacity(0.2)))
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(e.detail).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                                Text(e.date.formatted(.relative(presentation: .named)))
+                                    .font(.system(size: 13))
+                                    .foregroundStyle(.white.opacity(0.6))
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+}
+
+/// Flows met dit apparaat, of een knop om er een te maken.
+private struct DeviceFlowsPanel: View {
+    let device: Device
+    @EnvironmentObject private var home: HomeStore
+    @EnvironmentObject private var flows: FlowStore
+    @State private var editing: FlowEditTarget?
+
+    var body: some View {
+        let related = home.triggers.filter { flows.summary(for: $0).contains(device.name) }
+        VStack(spacing: 14) {
+            if related.isEmpty {
+                emptyText("Begin met automatiseren.", "Er zijn nog geen flows voor dit apparaat.")
+            } else {
+                ForEach(related, id: \.uniqueIdentifier) { trigger in
+                    HStack(spacing: 12) {
+                        FlowRunButton(trigger: trigger, size: 32)
+                        Text(trigger.name).font(.system(size: 15, weight: .semibold)).foregroundStyle(.white)
+                        Spacer()
+                    }
+                    .padding(8)
+                    .background(Capsule().fill(.white.opacity(0.15)))
+                }
+            }
+            Button {
+                var draft = FlowDraft(name: device.name)
+                if device.canTrigger {
+                    draft.when.kind = .device
+                    draft.when.deviceID = device.id
+                    draft.when.event = DeviceEventKind.options(for: device.kind).first ?? .turnsOn
+                }
+                editing = FlowEditTarget(draft: draft, trigger: nil)
+            } label: {
+                Label("Maak een flow", systemImage: "plus.circle.fill")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .frame(height: 44)
+                    .background(Capsule().fill(.white.opacity(0.2)))
+            }
+            .buttonStyle(PressableStyle())
+        }
+        .sheet(item: $editing) { target in
+            FlowEditorView(initial: target.draft, replacing: nil)
+                .environment(\.colorScheme, .light)
+        }
+    }
+}
+
+private func emptyText(_ title: String, _ detail: String) -> some View {
+    VStack(spacing: 6) {
+        Text(title).font(.system(size: 20, weight: .bold)).foregroundStyle(.white)
+        Text(detail).font(.system(size: 14)).foregroundStyle(.white.opacity(0.6)).multilineTextAlignment(.center)
+    }
+    .padding()
 }
 
 private struct DeviceControls: View {
@@ -57,24 +382,10 @@ private struct DeviceControls: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            // Kop zoals het apparaatscherm van Homey.
-            VStack(spacing: 10) {
-                DeviceIcon(device: device, size: 40)
-                    .foregroundStyle(device.isOn && device.kind == .light ? Theme.yellow : Theme.text)
-                    .frame(width: 72, height: 72)
-                    .background(Circle().fill(device.isOn ? Theme.tileOn : Theme.tileOff)
-                        .shadow(color: .black.opacity(device.isOn ? 0.12 : 0), radius: 3, y: 2))
-                Text(device.name).font(HomeyFont.xlarge).foregroundStyle(Theme.text).multilineTextAlignment(.center)
-                Text("\(device.roomName) · \(device.stateText)")
-                    .font(HomeyFont.body)
-                    .foregroundStyle(Theme.textLight)
-                    .contentTransition(.numericText())
-            }
-            .padding(.top, 16)
-
             switch device.kind {
             case .light:
-                LightControls(device: device)
+                // Helderheid en kleur zitten in de iconenbalk; hier alleen aan/uit, zoals Homey.
+                PowerButton(device: device)
             case .blinds, .window, .door:
                 PercentSlider(device: device,
                               type: HMCharacteristicTypeTargetPosition,
@@ -113,10 +424,9 @@ private struct PowerButton: View {
         } label: {
             Image(systemName: device.kind == .lock ? (device.isOn ? "lock.fill" : "lock.open.fill") : "power")
                 .font(.system(size: 54, weight: .medium))
-                .foregroundStyle(device.isOn ? Color.white : Theme.textLight)
-                .frame(width: 160, height: 160)
-                .background(Circle().fill(device.isOn ? AnyShapeStyle(Theme.accent.gradient) : AnyShapeStyle(Theme.card))
-                    .shadow(color: .black.opacity(0.12), radius: 6, y: 3))
+                .foregroundStyle(device.isOn ? Theme.green : Color.white.opacity(0.7))
+                .frame(width: 140, height: 140)
+                .background(Circle().fill(device.isOn ? AnyShapeStyle(Color.white) : AnyShapeStyle(Color.white.opacity(0.18))))
         }
         .buttonStyle(PressableStyle())
         .sensoryFeedback(.impact(weight: .medium), trigger: device.isOn)

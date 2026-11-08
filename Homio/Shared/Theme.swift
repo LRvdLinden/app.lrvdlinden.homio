@@ -6,13 +6,16 @@ enum Theme {
     // Homey-grijswaarden (colorPalette mono_*), licht en donker, zoals in de Homey-app.
     // Semantisch: body = mono_025, component = mono_000/mono_050,
     // component_on = mono_000/mono_200, component_off = mono_EX030/mono_050.
-    static let background = Color(light: 0xF4F4FA, dark: 0x111218)       // body
+    static let background = Color(light: 0xF0EFF7, dark: 0x111218)       // body (gemeten)
     static let card = Color(light: 0xFFFFFF, dark: 0x1F2029)             // component
     static let cardRaised = Color(light: 0xEAEAF1, dark: 0x2B2C36)       // component_highlight
     static let pill = Color(light: 0xEAEAF1, dark: 0x2B2C36)
     /// Apparaattegel uit (component_off) en aan (component_on).
-    static let tileOff = Color(light: 0xF1F1F8, dark: 0x1F2029)
+    static let tileOff = Color(light: 0xE8E7F0, dark: 0x1F2029)
     static let tileOn = Color(light: 0xFFFFFF, dark: 0x3B3D4A)
+    /// Snelle-actieknop op een tegel: uit grijs, aan lichtblauw (gemeten in de Homey-app).
+    static let quickOff = Color(light: 0xDAD9E2, dark: 0x2B2C36)
+    static let quickOn = Color(light: 0xE3F5FF, dark: 0x0D3A63)
     /// Haarlijn rond een tegel die uit staat (licht: zwart 5%, donker: mono_100).
     static let tileBorder = Color(lightRGBA: (0, 0, 0, 0.05), dark: 0x2B2C36)
     /// Homey Insights: kaart, pillen, raster en gekozen segment.
@@ -20,6 +23,8 @@ enum Theme {
     static let insightsPill = Color(light: 0xF1F2F6, dark: 0x2A2B36)
     static let insightsGrid = Color(light: 0xE3E5EC, dark: 0x3A3C4A)
     static let insightsSelected = Color(light: 0xFFFFFF, dark: 0x3B3D4A)
+    /// Lichtblauwe balk voor "Kaart toevoegen" (gemeten in de Homey-app).
+    static let addCardFill = Color(light: 0xE5F0FD, dark: 0x13263D)
     static let line = Color(light: 0xDADAE2, dark: 0x3B3D4A)              // mono_100 / mono_200
     static let lineLight = Color(light: 0xEAEAF1, dark: 0x2B2C36)         // mono_050 / mono_100
     static let text = Color(light: 0x1C1C1C, dark: 0xE4E4E7)              // mono_900
@@ -56,7 +61,7 @@ enum Theme {
     static let su: CGFloat = 4
     static let edge: CGFloat = 16
     static let edgeTablet: CGFloat = 32
-    static let gutter: CGFloat = 16
+    static let gutter: CGFloat = 10
     static let tilePadding: CGFloat = 12
     static let corner: CGFloat = 10
     static let cornerSmall: CGFloat = 5
@@ -255,47 +260,8 @@ struct GradientIcon: View {
 /// Tabbalk en navigatiebalk zoals in de Homey-app: effen vlak, haarlijn, blauw voor de
 /// gekozen tab, grijze iconen, grote vette titels.
 enum HomeyChrome {
-    private static func dynamic(_ light: UInt32, _ dark: UInt32, alpha: CGFloat = 1) -> UIColor {
-        func c(_ hex: UInt32) -> UIColor {
-            UIColor(red: CGFloat((hex >> 16) & 0xFF) / 255, green: CGFloat((hex >> 8) & 0xFF) / 255,
-                    blue: CGFloat(hex & 0xFF) / 255, alpha: alpha)
-        }
-        return UIColor { $0.userInterfaceStyle == .dark ? c(dark) : c(light) }
-    }
-
+    /// Bewust leeg: de Homey-app gebruikt de standaard zwevende iOS-tabbalk en navigatiebalk.
     static func apply() {
-        let accent = UIColor(red: 0, green: 0x82 / 255, blue: 0xFA / 255, alpha: 1)
-        let unselected = dynamic(0x93939A, 0x80818E)
-
-        let item = UITabBarItemAppearance()
-        item.normal.iconColor = unselected
-        item.normal.titleTextAttributes = [.foregroundColor: unselected, .font: UIFont.systemFont(ofSize: 10, weight: .medium)]
-        item.selected.iconColor = accent
-        item.selected.titleTextAttributes = [.foregroundColor: accent, .font: UIFont.systemFont(ofSize: 10, weight: .semibold)]
-
-        let tab = UITabBarAppearance()
-        tab.configureWithOpaqueBackground()
-        tab.backgroundColor = dynamic(0xFFFFFF, 0x111218)
-        tab.shadowColor = dynamic(0xDADAE2, 0x2B2C36)
-        tab.stackedLayoutAppearance = item
-        tab.inlineLayoutAppearance = item
-        tab.compactInlineLayoutAppearance = item
-        UITabBar.appearance().standardAppearance = tab
-        UITabBar.appearance().scrollEdgeAppearance = tab
-
-        let text = dynamic(0x1C1C1C, 0xE4E4E7)
-        let nav = UINavigationBarAppearance()
-        nav.configureWithTransparentBackground()
-        nav.backgroundColor = dynamic(0xF4F4FA, 0x111218)
-        nav.largeTitleTextAttributes = [.foregroundColor: text, .font: UIFont.systemFont(ofSize: 32, weight: .bold)]
-        nav.titleTextAttributes = [.foregroundColor: text, .font: UIFont.systemFont(ofSize: 17, weight: .semibold)]
-        let scrolled = UINavigationBarAppearance()
-        scrolled.configureWithDefaultBackground()
-        scrolled.largeTitleTextAttributes = nav.largeTitleTextAttributes
-        scrolled.titleTextAttributes = nav.titleTextAttributes
-        UINavigationBar.appearance().scrollEdgeAppearance = nav
-        UINavigationBar.appearance().standardAppearance = scrolled
-        UINavigationBar.appearance().compactAppearance = scrolled
     }
 }
 #endif

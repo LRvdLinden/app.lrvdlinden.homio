@@ -26,9 +26,7 @@ enum FlowCardType: String, Identifiable {
 
     var addTitle: String {
         switch self {
-        case .when: return "Kies een trigger"
-        case .and: return "Voorwaarde toevoegen"
-        case .then: return "Actie toevoegen"
+        case .when, .and, .then: return "Kaart toevoegen"
         }
     }
 }
@@ -67,14 +65,12 @@ struct FlowCardView: View {
     var body: some View {
         HStack(spacing: 12) {
             iconView
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(owner)
-                    .font(HomeyFont.tiny)
+                    .font(.system(size: 11))
                     .foregroundStyle(Theme.textLight)
                     .lineLimit(1)
-                sentence
-                    .font(.system(size: 15, weight: .medium))
-                    .fixedSize(horizontal: false, vertical: true)
+                FlowSentence(parts: parts)
             }
             Spacer(minLength: 0)
             if invalid {
@@ -91,34 +87,96 @@ struct FlowCardView: View {
         .contentShape(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous))
     }
 
-    private var sentence: Text {
-        parts.reduce(Text("")) { result, part in
-            if part.isArgument {
-                return result + Text(part.text).foregroundColor(Theme.accent).underline(color: Theme.accent.opacity(0.35))
-            }
-            return result + Text(part.text).foregroundColor(Theme.text)
-        }
-    }
 
     @ViewBuilder
     private var iconView: some View {
         switch icon {
         case .device(let device):
-            DeviceIcon(device: device, size: 26)
-                .foregroundStyle(Theme.text)
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: Theme.cornerSmall + 3, style: .continuous).fill(Theme.tileOff))
+            DeviceIcon(device: device, size: 22)
+                .foregroundStyle(.white)
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(FlowCardView.deviceColor(device.kind)))
         case .app(let symbol, let color):
             Image(systemName: symbol)
-                .font(.system(size: 19, weight: .semibold))
+                .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
-                .frame(width: 44, height: 44)
-                .background(RoundedRectangle(cornerRadius: Theme.cornerSmall + 3, style: .continuous).fill(color.gradient))
+                .frame(width: 40, height: 40)
+                .background(Circle().fill(color))
         }
     }
 }
 
 /// "+ Kaart toevoegen" in Homey-blauw.
+/// Kaartzin zoals Homey: gewone woorden, en instelbare waarden als klein omlijnd pilletje.
+struct FlowSentence: View {
+    let parts: [CardText]
+
+    var body: some View {
+        WrapLayout(spacing: 4, lineSpacing: 4) {
+            ForEach(Array(tokens.enumerated()), id: \.offset) { _, token in
+                if token.isArgument {
+                    Text(token.text)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Theme.text)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 1)
+                        .overlay(Capsule().strokeBorder(Theme.line, lineWidth: 1))
+                } else {
+                    Text(token.text)
+                        .font(.system(size: 15))
+                        .foregroundStyle(Theme.text)
+                }
+            }
+        }
+    }
+
+    /// Losse woorden (zodat de zin netjes afbreekt) en de waarden als één blok.
+    private var tokens: [CardText] {
+        parts.flatMap { part -> [CardText] in
+            if part.isArgument { return [part] }
+            return part.text.split(separator: " ").map { CardText.t(String($0)) }
+        }
+    }
+}
+
+/// Eenvoudige layout die regels afbreekt, zoals tekst.
+struct WrapLayout: Layout {
+    var spacing: CGFloat = 4
+    var lineSpacing: CGFloat = 4
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, lineHeight: CGFloat = 0, widest: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > 0 && x + size.width > maxWidth {
+                y += lineHeight + lineSpacing
+                x = 0
+                lineHeight = 0
+            }
+            x += size.width + spacing
+            widest = max(widest, x - spacing)
+            lineHeight = max(lineHeight, size.height)
+        }
+        return CGSize(width: min(widest, maxWidth), height: y + lineHeight)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = bounds.minX, y = bounds.minY, lineHeight: CGFloat = 0
+        for view in subviews {
+            let size = view.sizeThatFits(.unspecified)
+            if x > bounds.minX && x + size.width > bounds.maxX {
+                y += lineHeight + lineSpacing
+                x = bounds.minX
+                lineHeight = 0
+            }
+            view.place(at: CGPoint(x: x, y: y + (lineHeight > 0 ? 0 : 0)), proposal: ProposedViewSize(size))
+            x += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+        }
+    }
+}
+
 struct AddCardButton: View {
     let title: String
     let action: () -> Void
@@ -131,10 +189,8 @@ struct AddCardButton: View {
             }
             .foregroundStyle(Theme.accent)
             .frame(maxWidth: .infinity)
-            .frame(height: 48)
-            .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.accent.opacity(0.08)))
-            .overlay(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous)
-                .strokeBorder(Theme.accent.opacity(0.25), style: StrokeStyle(lineWidth: 1, dash: [5, 4])))
+            .frame(height: 44)
+            .background(RoundedRectangle(cornerRadius: Theme.corner, style: .continuous).fill(Theme.addCardFill))
         }
         .buttonStyle(PressableStyle())
     }
@@ -154,9 +210,9 @@ struct FlowCardFactory {
             }
             if w.event.needsThreshold {
                 let what = d.kind == .humidity ? "Vochtigheid" : "Temperatuur"
-                return (.device(d), d.name, [.t("\(what) \(w.event.label) "), .a("\(w.threshold.oneDecimal)\(d.thresholdUnit)")], false)
+                return (.device(d), "\(d.name) — \(d.roomName)", [.t("\(what) \(w.event.label) "), .a("\(w.threshold.oneDecimal)\(d.thresholdUnit)")], false)
             }
-            return (.device(d), d.name, [.t(w.event.label.capitalizedFirst)], false)
+            return (.device(d), "\(d.name) — \(d.roomName)", [.t(w.event.label.capitalizedFirst)], false)
         case .time:
             let time = String(format: "%02d:%02d", w.hour, w.minute)
             return (.app(symbol: FlowApp.dateTime.symbol, color: FlowApp.dateTime.color), FlowApp.dateTime.name,
@@ -190,7 +246,7 @@ struct FlowCardFactory {
             guard let id = c.deviceID, let d = home.device(id: id) else {
                 return (.app(symbol: "questionmark", color: .gray), "Apparaat", [.t("Kies een apparaat")], true)
             }
-            return (.device(d), d.name, [.t("Is "), .a(c.deviceOn ? d.stateWords.on : d.stateWords.off)], false)
+            return (.device(d), "\(d.name) — \(d.roomName)", [.t("Is "), .a(c.deviceOn ? d.stateWords.on : d.stateWords.off)], false)
         }
     }
 
@@ -213,7 +269,7 @@ struct FlowCardFactory {
         case .door: parts = [.a(s.value > 0 ? "Openen" : "Sluiten")]
         case .scene: parts = []
         }
-        return (.device(d), d.name, parts, false)
+        return (.device(d), "\(d.name) — \(d.roomName)", parts, false)
     }
 
     func revert(_ minutes: Int) -> (CardIcon, String, [CardText], Bool) {
@@ -257,7 +313,7 @@ struct FlowCardPicker: View {
     var body: some View {
         NavigationStack {
             List {
-                Section("Apps") {
+                Section("Systeem") {
                     ForEach(apps.indices, id: \.self) { i in
                         let app = apps[i]
                         if matches(app.name) {
@@ -272,18 +328,37 @@ struct FlowCardPicker: View {
                         }
                     }
                 }
-                ForEach(rooms, id: \.name) { room in
-                    let devices = room.devices.filter { matches($0.name) || matches(room.name) }
-                    if !devices.isEmpty {
-                        Section(room.name) {
-                            ForEach(devices) { device in
-                                NavigationLink {
-                                    DeviceCardsList(type: type, device: device, draft: $draft) { ref in
-                                        onAdded(ref)
-                                        dismiss()
+                Section("Zones & Apparaten") {
+                    ForEach(rooms, id: \.name) { room in
+                        let devices = room.devices.filter { matches($0.name) || matches(room.name) }
+                        if !devices.isEmpty {
+                            NavigationLink {
+                                List {
+                                    Section("Apparaten") {
+                                        ForEach(devices) { device in
+                                            NavigationLink {
+                                                DeviceCardsList(type: type, device: device, draft: $draft) { ref in
+                                                    onAdded(ref)
+                                                    dismiss()
+                                                }
+                                            } label: {
+                                                row(icon: .device(device), title: device.name, subtitle: nil)
+                                            }
+                                        }
                                     }
-                                } label: {
-                                    row(icon: .device(device), title: device.name, subtitle: device.stateText)
+                                }
+                                .navigationTitle(room.name)
+                            } label: {
+                                HStack(spacing: 12) {
+                                    Image(systemName: RoomIcon.symbol(for: room.name))
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(.white)
+                                        .frame(width: 32, height: 32)
+                                        .background(Circle().fill(Color(red: 0x32 / 255, green: 0x33 / 255, blue: 0x34 / 255)))
+                                    Text(room.name)
+                                    Spacer()
+                                    Text(devices.count == 1 ? "1 apparaat" : "\(devices.count) apparaten")
+                                        .foregroundStyle(Theme.textLight)
                                 }
                             }
                         }
@@ -291,7 +366,7 @@ struct FlowCardPicker: View {
                 }
             }
             .searchable(text: $query, prompt: "Zoek een app of apparaat")
-            .navigationTitle(type.addTitle)
+            .navigationTitle(type.heading)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("Annuleer") { dismiss() } }
@@ -336,21 +411,36 @@ struct FlowCardPicker: View {
 }
 
 extension FlowCardView {
+    /// Kleur van het rondje achter een apparaaticoon (zoals Homey: lampen oranje).
+    static func deviceColor(_ kind: DeviceKind) -> Color {
+        switch kind {
+        case .light: return Color(red: 0xF5 / 255, green: 0xA6 / 255, blue: 0x23 / 255)
+        case .outlet, .switchKind, .valve: return Theme.green
+        case .thermostat, .heaterCooler, .temperature: return Theme.orange
+        case .lock, .security, .contact, .door, .window, .garage: return Color(red: 0x32 / 255, green: 0x33 / 255, blue: 0x34 / 255)
+        case .motion, .occupancy: return Theme.accent
+        case .smoke, .carbonMonoxide, .leak: return Theme.red
+        case .speaker: return Theme.purple
+        case .tv: return Color(red: 0x1E / 255, green: 0x9B / 255, blue: 0xF0 / 255)
+        default: return Color(red: 0x6D / 255, green: 0x6C / 255, blue: 0x74 / 255)
+        }
+    }
+
     /// Alleen het icoonvlak, voor lijsten.
     var iconOnly: some View {
         Group {
             switch icon {
             case .device(let device):
-                DeviceIcon(device: device, size: 20)
-                    .foregroundStyle(Theme.text)
-                    .frame(width: 34, height: 34)
-                    .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(Theme.tileOff))
+                DeviceIcon(device: device, size: 18)
+                    .foregroundStyle(.white)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(FlowCardView.deviceColor(device.kind)))
             case .app(let symbol, let color):
                 Image(systemName: symbol)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
-                    .frame(width: 34, height: 34)
-                    .background(RoundedRectangle(cornerRadius: 7, style: .continuous).fill(color.gradient))
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(color))
             }
         }
     }
@@ -375,16 +465,26 @@ enum FlowCardRef: Identifiable, Hashable {
 
 private struct PickRow: View {
     let parts: [CardText]
+    var popular = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack {
-                parts.reduce(Text("")) { $0 + Text($1.text).foregroundColor($1.isArgument ? Theme.accent : Theme.text) }
-                Spacer()
-                Image(systemName: "plus.circle.fill").foregroundStyle(Theme.accent)
+            HStack(alignment: .top) {
+                FlowSentence(parts: parts)
+                Spacer(minLength: 6)
+                if popular {
+                    Label("Populair", systemImage: "star.fill")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Theme.red)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.red, lineWidth: 1))
+                }
             }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -399,7 +499,7 @@ private struct AppCardsList: View {
         List {
             switch (type, app) {
             case (.when, FlowApp.dateTime.name):
-                PickRow(parts: [.t("Het is "), .a("…"), .t(" op "), .a("…")]) {
+                PickRow(parts: [.t("Het is "), .a("Tijd"), .t(" op "), .a("Dagen")]) {
                     draft.when = WhenCard(kind: .time)
                     done(.when)
                 }
@@ -420,7 +520,7 @@ private struct AppCardsList: View {
                     }
                 }
             case (.and, FlowApp.dateTime.name):
-                PickRow(parts: [.t("Tijd is tussen "), .a("…"), .t(" en "), .a("…")]) {
+                PickRow(parts: [.t("Tijd is tussen "), .a("Tijd"), .t(" en "), .a("Tijd")]) {
                     let card = AndCard(kind: .timeBetween)
                     draft.ands.append(card)
                     done(.and(card.id))
@@ -475,7 +575,7 @@ private struct DeviceCardsList: View {
             case .when:
                 ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { event in
                     PickRow(parts: event.needsThreshold
-                            ? [.t("\(device.kind == .humidity ? "Vochtigheid" : "Temperatuur") \(event.label) "), .a("…")]
+                            ? [.t("\(device.kind == .humidity ? "Vochtigheid" : "Temperatuur") \(event.label) "), .a("Waarde")]
                             : [.t(event.label.capitalizedFirst)]) {
                         var w = WhenCard(kind: .device)
                         w.deviceID = device.id
@@ -498,7 +598,7 @@ private struct DeviceCardsList: View {
             case .then:
                 ForEach(actions.indices, id: \.self) { i in
                     let item = actions[i]
-                    PickRow(parts: item.1) {
+                    PickRow(parts: item.1, popular: i < 2) {
                         var step = ActionStep.defaults(for: device)
                         step.mode = item.2
                         step.value = item.3
@@ -518,16 +618,16 @@ private struct DeviceCardsList: View {
                 ("on", [.t("Zet "), .a("aan")], .power, 1), ("off", [.t("Zet "), .a("uit")], .power, 0)
             ]
             if device.characteristic(HMCharacteristicTypeBrightness) != nil {
-                list.append(("dim", [.t("Dim naar "), .a("…")], .brightness, 70))
+                list.append(("dim", [.t("Dim naar "), .a("Bereik")], .brightness, 70))
             }
             return list
         case .lock:
             return [("lock", [.t("Doe "), .a("op slot")], .lock, 1), ("unlock", [.t("Doe "), .a("van het slot")], .lock, 0)]
         case .blinds, .window, .door:
             return [("open", [.t("Zet op "), .a("100% open")], .position, 100), ("close", [.t("Zet op "), .a("0% open")], .position, 0),
-                    ("pos", [.t("Zet op "), .a("…")], .position, 50)]
+                    ("pos", [.t("Zet op "), .a("Positie")], .position, 50)]
         case .thermostat:
-            return [("temp", [.t("Zet temperatuur op "), .a("…")], .temperature, device.targetTemperature ?? 20)]
+            return [("temp", [.t("Zet temperatuur op "), .a("Temperatuur")], .temperature, device.targetTemperature ?? 20)]
         case .garage:
             return [("open", [.a("Openen")], .door, 1), ("close", [.a("Sluiten")], .door, 0)]
         default:

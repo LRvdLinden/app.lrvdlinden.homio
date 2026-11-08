@@ -56,7 +56,7 @@ struct ZoneControlSheet: View {
     @EnvironmentObject private var history: HistoryStore
     @Environment(\.dismiss) private var dismiss
 
-    private let columns = [GridItem(.adaptive(minimum: 96, maximum: 160), spacing: Theme.gutter)]
+    private let columns = [GridItem(.adaptive(minimum: 74, maximum: 140), spacing: Theme.gutter)]
 
     private var matching: [Device] {
         switch kind {
