@@ -26,7 +26,7 @@ enum WhenKind: String, Codable, CaseIterable {
 }
 
 enum DeviceEventKind: String, Codable, CaseIterable {
-    case turnsOn, turnsOff, opens, closes, motion, locked, unlocked, above, below
+    case turnsOn, turnsOff, opens, closes, motion, motionStops, locked, unlocked, above, below
 
     var label: String {
         switch self {
@@ -34,11 +34,26 @@ enum DeviceEventKind: String, Codable, CaseIterable {
         case .turnsOff: return "gaat uit"
         case .opens: return "gaat open"
         case .closes: return "gaat dicht"
-        case .motion: return "ziet beweging of slaat alarm"
+        case .motion: return "begint beweging te detecteren"
+        case .motionStops: return "stopt met beweging detecteren"
         case .locked: return "gaat op slot"
         case .unlocked: return "gaat van het slot"
         case .above: return "komt boven"
         case .below: return "komt onder"
+        }
+    }
+
+    /// Tekst zoals op een Homey-kaart, passend bij het soort apparaat.
+    /// Beginnen en stoppen zijn twee aparte kaarten, net als in Homey.
+    func label(for kind: DeviceKind) -> String {
+        guard self == .motion || self == .motionStops else { return label }
+        let start = self == .motion
+        switch kind {
+        case .occupancy: return start ? "detecteert aanwezigheid" : "detecteert geen aanwezigheid meer"
+        case .smoke: return start ? "detecteert rook" : "detecteert geen rook meer"
+        case .carbonMonoxide: return start ? "detecteert koolmonoxide" : "detecteert geen koolmonoxide meer"
+        case .leak: return start ? "detecteert lekkage" : "detecteert geen lekkage meer"
+        default: return label
         }
     }
 
@@ -50,7 +65,7 @@ enum DeviceEventKind: String, Codable, CaseIterable {
             return [.turnsOn, .turnsOff]
         case .lock: return [.locked, .unlocked]
         case .contact, .garage: return [.opens, .closes]
-        case .motion, .occupancy, .smoke, .carbonMonoxide, .leak: return [.motion]
+        case .motion, .occupancy, .smoke, .carbonMonoxide, .leak: return [.motion, .motionStops]
         case .temperature, .humidity, .thermostat, .lux: return [.above, .below]
         default: return []
         }
@@ -254,9 +269,9 @@ extension FlowDraft {
         case .device:
             guard let id = when.deviceID, let device = home.device(id: id) else { return "Kies een apparaat" }
             if when.event.needsThreshold {
-                return "\(device.name) \(when.event.label) \(when.threshold.oneDecimal)\(device.thresholdUnit)"
+                return "\(device.name) \(when.event.label(for: device.kind)) \(when.threshold.oneDecimal)\(device.thresholdUnit)"
             }
-            return "\(device.name) \(when.event.label)"
+            return "\(device.name) \(when.event.label(for: device.kind))"
         case .time:
             let time = String(format: "%02d:%02d", when.hour, when.minute)
             if when.weekdays.isEmpty || when.weekdays.count == 7 { return "Elke dag om \(time)" }

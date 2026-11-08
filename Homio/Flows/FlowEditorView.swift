@@ -266,7 +266,7 @@ struct WhenFields: View {
             if let id = draft.when.deviceID, let device = home.device(id: id) {
                 Picker("Gebeurtenis", selection: $draft.when.event) {
                     ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { e in
-                        Text(e.label.capitalizedFirst).tag(e)
+                        Text(e.label(for: device.kind).capitalizedFirst).tag(e)
                     }
                 }
                 if draft.when.event.needsThreshold {

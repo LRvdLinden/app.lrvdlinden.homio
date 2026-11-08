@@ -326,16 +326,17 @@ final class FlowStore: ObservableObject {
                 return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: open ? 0 : 1))
             }
             return nil
-        case .motion:
-            // Beweging, aanwezigheid of een alarm (rook, CO, lekkage) dat afgaat.
+        case .motion, .motionStops:
+            // Begint (true/1) of stopt (false/0) met detecteren: beweging, aanwezigheid of een alarm.
+            let start = kind == .motion
             if let c = device.characteristic(HMCharacteristicTypeMotionDetected) {
-                return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: true))
+                return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: start))
             }
             let alarmTypes = [HMCharacteristicTypeOccupancyDetected, HMCharacteristicTypeSmokeDetected,
                               HMCharacteristicTypeCarbonMonoxideDetected, HMCharacteristicTypeCarbonDioxideDetected,
                               HMCharacteristicTypeLeakDetected]
             guard let c = alarmTypes.lazy.compactMap({ device.characteristic($0) }).first else { return nil }
-            return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: 1))
+            return HMCharacteristicEvent(characteristic: c, triggerValue: NSNumber(value: start ? 1 : 0))
         case .above, .below:
             guard let c = device.sensorCharacteristic else { return nil }
             let range = kind == .above

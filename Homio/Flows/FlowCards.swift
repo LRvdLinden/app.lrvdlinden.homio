@@ -210,9 +210,9 @@ struct FlowCardFactory {
             }
             if w.event.needsThreshold {
                 let value = d.kind == .lux ? "\(Int(w.threshold)) lux" : "\(w.threshold.oneDecimal)\(d.thresholdUnit)"
-                return (.device(d), "\(d.name) — \(d.roomName)", [.t("\(d.measureName) \(w.event.label) "), .a(value)], false)
+                return (.device(d), "\(d.name) — \(d.roomName)", [.t("\(d.measureName) \(w.event.label(for: d.kind)) "), .a(value)], false)
             }
-            return (.device(d), "\(d.name) — \(d.roomName)", [.t(w.event.label.capitalizedFirst)], false)
+            return (.device(d), "\(d.name) — \(d.roomName)", [.t(w.event.label(for: d.kind).capitalizedFirst)], false)
         case .time:
             let time = String(format: "%02d:%02d", w.hour, w.minute)
             return (.app(symbol: FlowApp.dateTime.symbol, color: FlowApp.dateTime.color), FlowApp.dateTime.name,
@@ -582,8 +582,8 @@ private struct DeviceCardsList: View {
             case .when:
                 ForEach(DeviceEventKind.options(for: device.kind), id: \.self) { event in
                     PickRow(parts: event.needsThreshold
-                            ? [.t("\(device.measureName) \(event.label) "), .a("Waarde")]
-                            : [.t(event.label.capitalizedFirst)]) {
+                            ? [.t("\(device.measureName) \(event.label(for: device.kind)) "), .a("Waarde")]
+                            : [.t(event.label(for: device.kind).capitalizedFirst)]) {
                         var w = WhenCard(kind: .device)
                         w.deviceID = device.id
                         w.event = event
