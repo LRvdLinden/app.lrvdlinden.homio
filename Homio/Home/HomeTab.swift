@@ -1,8 +1,8 @@
 import HomeKit
 import SwiftUI
 
-/// Het Thuis-tabblad: begroeting, status, zones (favorieten, alles, kamers), sferen en apparaten.
-struct HomeTab: View {
+/// Het Apparaten-tabblad zoals in Homey: zones, zonebediening en apparaattegels per kamer.
+struct DevicesTab: View {
     let startDisplay: () -> Void
 
     @EnvironmentObject private var home: HomeStore
@@ -12,7 +12,7 @@ struct HomeTab: View {
     @EnvironmentObject private var flows: FlowStore
     @Environment(\.horizontalSizeClass) private var sizeClass
 
-    @State private var zone: Zone = .favorites
+    @State private var zone: Zone = .all
     @State private var sceneEdit: SceneEditTarget?
     @State private var sceneToDelete: HMActionSet?
     @State private var showSearch = false
@@ -32,12 +32,9 @@ struct HomeTab: View {
             HomeStateGate {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 24) {
-                        header
-                        AttentionSection()
                         zonePicker
                         zoneControls
-                        scenesRow
-                        if zone == .favorites || zone == .all {
+                        if zone == .all {
                             GroupsSection(columns: columns)
                         }
                         zoneContent
@@ -49,7 +46,7 @@ struct HomeTab: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Theme.background)
-            .navigationTitle(home.home?.name ?? "Thuis")
+            .navigationTitle("Apparaten")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button(action: startDisplay) {
@@ -207,8 +204,7 @@ struct HomeTab: View {
     private var zonePicker: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ZoneChip(title: "Favorieten", symbol: "star.fill", selected: zone == .favorites) { zone = .favorites }
-                ZoneChip(title: "Alles", symbol: "house.fill", selected: zone == .all) { zone = .all }
+                ZoneChip(title: home.home?.name ?? "Alles", symbol: "house.fill", selected: zone == .all) { zone = .all }
                 ForEach(home.rooms) { room in
                     ZoneChip(title: room.name, symbol: nil, selected: zone == .room(room.name)) {
                         zone = .room(room.name)

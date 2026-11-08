@@ -25,6 +25,20 @@ struct SettingsView: View {
     var body: some View {
         NavigationStack {
             Form {
+                // Zoals Homey's Meer: inzichten, alarmen (timers), batterijen en gebruikers bovenaan.
+                Section {
+                    NavigationLink {
+                        InsightsTab(embedded: true)
+                    } label: {
+                        SettingsRowLabel("Inzichten", symbol: "chart.xyaxis.line", color: Theme.green)
+                    }
+                    NavigationLink {
+                        HealthView()
+                    } label: {
+                        SettingsRowLabel("Batterijen", symbol: "battery.75percent", color: Color(red: 0x2D / 255, green: 0xC1 / 255, blue: 0x26 / 255))
+                    }
+                }
+
                 Section {
                     if let startDisplay {
                         Button(action: startDisplay) {

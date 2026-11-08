@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppTab: Hashable {
-    case home, dashboards, flows, insights, more
+    case home, devices, flows, dashboards, more
 }
 
 /// De app na het inloggen: vijf tabbladen, plus de weergavemodus (kiosk) over alles heen.
@@ -23,17 +23,17 @@ struct AppShell: View {
                 .tabItem { Label("Thuis", systemImage: "house.fill") }
                 .tag(AppTab.home)
 
-            DashboardsTab(startDisplay: startDisplay)
-                .tabItem { Label("Dashboards", systemImage: "square.grid.2x2.fill") }
-                .tag(AppTab.dashboards)
+            DevicesTab(startDisplay: startDisplay)
+                .tabItem { Label("Apparaten", systemImage: "lightbulb.2.fill") }
+                .tag(AppTab.devices)
 
             FlowsTab()
                 .tabItem { Label("Flows", systemImage: "arrow.triangle.branch") }
                 .tag(AppTab.flows)
 
-            InsightsTab()
-                .tabItem { Label("Inzichten", systemImage: "chart.xyaxis.line") }
-                .tag(AppTab.insights)
+            DashboardsTab(startDisplay: startDisplay)
+                .tabItem { Label("Dashboards", systemImage: "square.grid.2x2.fill") }
+                .tag(AppTab.dashboards)
 
             SettingsView(showsDone: false, startDisplay: startDisplay)
                 .tabItem { Label("Meer", systemImage: "ellipsis.circle.fill") }

@@ -3,6 +3,8 @@ import SwiftUI
 
 /// Inzichten: grafieken van temperatuur, vocht, licht en schakelaars, en een tijdlijn.
 struct InsightsTab: View {
+    /// Binnen een andere navigatie (vanuit Meer) zonder eigen NavigationStack.
+    var embedded = false
     @EnvironmentObject private var history: HistoryStore
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -12,7 +14,14 @@ struct InsightsTab: View {
     @State private var confirmClear = false
 
     var body: some View {
-        NavigationStack {
+        if embedded {
+            content
+        } else {
+            NavigationStack { content }
+        }
+    }
+
+    private var content: some View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     PillSegments(items: [(0, "Grafieken"), (1, "Tijdlijn")], selection: $mode)
@@ -44,7 +53,6 @@ struct InsightsTab: View {
             .confirmationDialog("Alle metingen en de tijdlijn wissen?", isPresented: $confirmClear, titleVisibility: .visible) {
                 Button("Wissen", role: .destructive) { history.clearAll() }
             }
-        }
     }
 
     // MARK: Grafieken
