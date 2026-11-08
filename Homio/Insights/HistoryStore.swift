@@ -26,12 +26,11 @@ enum MetricKind: String, Codable, CaseIterable {
 
     var color: Color {
         switch self {
-        // Kleuren per meetwaarde zoals Homey Insights.
-        case .temperature: return Color(red: 0xF5 / 255, green: 0xB7 / 255, blue: 0x31 / 255)
-        case .humidity: return Color(red: 0x3B / 255, green: 0x82 / 255, blue: 0xF6 / 255)
-        case .lux: return Color(red: 0xF7 / 255, green: 0xC5 / 255, blue: 0x43 / 255)
-        case .light: return Color(red: 0xF7 / 255, green: 0xC5 / 255, blue: 0x43 / 255)
-        case .power: return Color(red: 0x7E / 255, green: 0xD3 / 255, blue: 0x21 / 255)
+        // Kleuren per meetwaarde zoals Homey Insights (v10 insights_*).
+        case .temperature: return InsightsColor.temperature
+        case .humidity: return InsightsColor.humidity
+        case .lux, .light: return InsightsColor.luminance
+        case .power: return InsightsColor.power
         }
     }
 

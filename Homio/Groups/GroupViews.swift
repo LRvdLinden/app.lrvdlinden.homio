@@ -52,11 +52,7 @@ struct GroupTile: View {
         }
         .aspectRatio(fillsHeight ? nil : 1, contentMode: .fit)
         .frame(minHeight: minHeight > 0 ? minHeight : nil)
-        .background {
-            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                .fill(on ? Theme.tileOn : Theme.tileOff)
-                .shadow(color: .black.opacity(on ? 0.08 : 0), radius: 3, y: 1)
-        }
+        .background { HomeyTileBackground(lit: on) }
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
         .onTapGesture { showDetail = true }
         .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.6), trigger: tapped)

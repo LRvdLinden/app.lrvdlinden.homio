@@ -48,11 +48,11 @@ enum CardIcon {
 
 /// Homey-apps die Homio nadoet, met hun kleuren uit de Homey-app.
 enum FlowApp {
-    static let dateTime = (name: "Datum & tijd", symbol: "clock.fill", color: Color(red: 0xDA / 255, green: 0x27 / 255, blue: 0x24 / 255))
-    static let sun = (name: "Zon", symbol: "sun.horizon.fill", color: Color(red: 0xF7 / 255, green: 0xB5 / 255, blue: 0))
-    static let presence = (name: "Aanwezigheid", symbol: "figure.walk", color: Color(red: 0x9C / 255, green: 0x47 / 255, blue: 0xFC / 255))
-    static let scenes = (name: "Sferen", symbol: "sparkles", color: Color(red: 0xB6 / 255, green: 0x20 / 255, blue: 0xE0 / 255))
-    static let homio = (name: "Homio", symbol: "timer", color: Color(red: 0x5C / 255, green: 0xCB / 255, blue: 0x41 / 255))
+    static let dateTime = (name: "Datum & tijd", symbol: "clock.fill", color: SystemColor.dateTime)
+    static let sun = (name: "Zon", symbol: "sun.horizon.fill", color: SystemColor.weather)
+    static let presence = (name: "Aanwezigheid", symbol: "figure.walk", color: SystemColor.presence)
+    static let scenes = (name: "Sferen", symbol: "sparkles", color: SystemColor.moods)
+    static let homio = (name: "Homio", symbol: "timer", color: SystemColor.flow)
 }
 
 /// De kaart zelf: wit vlak, icoon links, eigenaar klein erboven, zin met blauwe waarden.

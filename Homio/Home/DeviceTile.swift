@@ -77,11 +77,7 @@ struct TileFace<Menu: View>: View {
         }
         .aspectRatio(fillsHeight ? nil : 1, contentMode: .fit)
         .frame(minHeight: minHeight > 0 ? minHeight : nil)
-        .background {
-            RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous)
-                .fill(model.lit ? Theme.tileOn : Theme.tileOff)
-                .shadow(color: .black.opacity(model.lit ? 0.08 : 0), radius: 3, y: 1)
-        }
+        .background { HomeyTileBackground(lit: model.lit) }
         .opacity(model.isReachable ? 1 : 0.85)
         .contentShape(RoundedRectangle(cornerRadius: Theme.tileCorner, style: .continuous))
         .onTapGesture {

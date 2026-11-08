@@ -27,3 +27,12 @@ Bron: thema-modules in de Homey Android-app (React Native/Hermes). Alleen maten 
 - rechtsboven een indicator: waarde, batterij of rood alarmrondje (24% van de tegel) met "!"
 - tik = snelle actie (zacht tikje), lang drukken = apparaat openen (medium tik)
 - zonder snelle actie (sensor) staat de tegel altijd "aan"
+
+## Homey v10.1.4 (APK, nagelopen)
+
+- body `mono_025` (#F4F4FA / #111218), component `mono_000/mono_050` (#FFF / #1F2029).
+- Apparaattegel: uit = `component_off` (#F1F1F8 / #181920) met haarlijn `mono_100` (#DADAE2 / #2B2C36);
+  aan = `component_on` (#FFF / #2B2C36) zonder rand; overgang geanimeerd (interpolateColor).
+- Tegelmaten blijven: ontwerp op 108 px, icoon 36/108 van de breedte, tekst `fontSize.small`.
+- `system_*`-kleuren voor app-iconen (Meer/Instellingen/Flow) en `insights_*`-kleuren voor grafieken
+  staan in `SystemColor` en `InsightsColor` in Theme.swift.
